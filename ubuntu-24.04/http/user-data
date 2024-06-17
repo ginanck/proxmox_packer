@@ -1,0 +1,75 @@
+#cloud-config
+autoinstall:
+  version: 1
+  early-commands:
+    - sudo systemctl stop ssh
+    - sudo apt update
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  apt:
+    preserve_sources_list: false
+    mirror-selection:
+      primary:
+        - country-mirror
+        - arches: [i386, amd64]
+          uri: "http://archive.ubuntu.com/ubuntu"
+        - arches: [s390x, arm64, armhf, powerpc, ppc64el, riscv64]
+          uri: "http://ports.ubuntu.com/ubuntu-ports"
+    fallback: abort
+    geoip: true
+  update: true
+  updates: all
+  packages: [openssh-server, perl, open-iscsi, curl, nano]
+  network:
+    network:
+      version: 2
+      ethernets:
+        ens18:
+          dhcp4: yes
+  storage:
+    layout:
+      name: lvm
+  identity:
+    hostname: ubuntu-2404
+    username: ubuntu
+    password: $6$4hSmTb6OW5IQC1iC$ANqpd7HVXmmx01YLGUcVt4cFwB2GTGXqF8ISgZt0Pi.ccmwf7mJSgzRgi8LT5X1idtWT68.NPuKD64cUoIw5Y1
+  ssh:
+    install-server: yes
+    authorized-keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKPfGz+sMQ+ZwXjvgS0W4SJOoeJQA72Kx24tRW+Uf5p gkorkmaz"
+    allow-pw: yes
+  user-data:
+    disable_root: true
+    users:
+      - name: ubuntu
+        groups: [adm, sudo]
+        lock-passwd: false
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        shell: /bin/bash
+        passwd: $6$VzZPpEDvJGkSOxz8$KSA4PPFlVAaBJ/nlqNK1V0Ys1aMOl21eqIkfWD5K.VwRujpw4NBxETXkJ03ucWDUKl4hK7K5f1GsOray/12g4/
+        ssh_authorized_keys:
+          - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPmaSIzwHMrS7/nfYreiGrPfujrvABwnmODooaaIy66u ansible@gkorkmaz"
+      - name: ansible
+        groups: [adm, sudo]
+        lock-passwd: false
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        shell: /bin/bash
+        passwd: $6$l0y3xydzm.yD2a2x$/HOcy7c1Gs0BftWF5zuBv2igccgXSzd.1enG7tydMfGS4fWn8zNzHw0sMdQ/By6vz.AXzyjAVK2mSZqr9UWWx/
+        ssh_authorized_keys:
+          - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPmaSIzwHMrS7/nfYreiGrPfujrvABwnmODooaaIy66u ansible@gkorkmaz"
+  late-commands:
+    - |
+      rm /target/etc/netplan/00-installer-config.yaml
+      cat <<EOF > /target/etc/netplan/80-my.yaml
+      network:
+        ethernets:
+          ens18:
+            dhcp4: true
+        version: 2
+      EOF
+    - sed -i -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/g' /target/etc/ssh/sshd_config
+    - sed -i -e 's/^#\?PermitRootLogin.*/PermitRootLogin yes/g' /target/etc/ssh/sshd_config
+    - curtin in-target -- apt update
+    - curtin in-target -- apt install -qy qemu-guest-agent
+    - curtin in-target -- systemctl enable qemu-guest-agent
