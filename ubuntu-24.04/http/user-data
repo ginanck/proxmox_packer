@@ -49,15 +49,7 @@ autoinstall:
         shell: /bin/bash
         passwd: $6$VzZPpEDvJGkSOxz8$KSA4PPFlVAaBJ/nlqNK1V0Ys1aMOl21eqIkfWD5K.VwRujpw4NBxETXkJ03ucWDUKl4hK7K5f1GsOray/12g4/
         ssh_authorized_keys:
-          - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPmaSIzwHMrS7/nfYreiGrPfujrvABwnmODooaaIy66u ansible@gkorkmaz"
-      - name: ansible
-        groups: [adm, sudo]
-        lock-passwd: false
-        sudo: ALL=(ALL) NOPASSWD:ALL
-        shell: /bin/bash
-        passwd: $6$l0y3xydzm.yD2a2x$/HOcy7c1Gs0BftWF5zuBv2igccgXSzd.1enG7tydMfGS4fWn8zNzHw0sMdQ/By6vz.AXzyjAVK2mSZqr9UWWx/
-        ssh_authorized_keys:
-          - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPmaSIzwHMrS7/nfYreiGrPfujrvABwnmODooaaIy66u ansible@gkorkmaz"
+          - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKPfGz+sMQ+ZwXjvgS0W4SJOoeJQA72Kx24tRW+Uf5p gkorkmaz"
   late-commands:
     - |
       rm /target/etc/netplan/00-installer-config.yaml

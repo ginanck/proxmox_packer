@@ -182,9 +182,9 @@ source "proxmox-iso" "ubuntu-cloud-init" {
   }
 
   http_directory          = var.http_directory
-  http_bind_address       = var.http_bind_address
-  http_port_min           = var.http_bind_port
-  http_port_max           = var.http_bind_port
+  #http_bind_address       = var.http_bind_address
+  #http_port_min           = var.http_bind_port
+  #http_port_max           = var.http_bind_port
   cloud_init              = true
   cloud_init_storage_pool = var.vm_storage_pool
 
