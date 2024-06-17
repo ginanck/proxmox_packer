@@ -208,6 +208,7 @@ source "proxmox-iso" "ubuntu-cloud-init" {
     "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
     "initrd=/install/initrd.gz ",
     "console-setup/ask_detect=false ",
+    "setup_bash_url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/late_command.sh ",
     " -- <enter>"
   ]
 
