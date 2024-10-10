@@ -18,6 +18,16 @@ variable "template_name" {
   default = "ubuntu-2004-template"
 }
 
+variable "template_hostname" {
+  type    = string
+  default = "ubuntu-2004"
+}
+
+variable "locale" {
+  type    = string
+  default = "en_US.UTF-8"
+}
+
 variable "vm_cpu_type" {
   type    = string
   default = "host"
@@ -30,7 +40,7 @@ variable "vm_os" {
 
 variable "vm_id" {
   type    = string
-  default = "902"
+  default = "802"
 }
 
 variable "vm_iso_file" {
@@ -120,7 +130,7 @@ variable "ssh_password" {
 
 variable "node_name" {
   type    = string
-  default = "helium"
+  default = "oxygen"
 }
 
 variable "http_directory" {
@@ -130,7 +140,7 @@ variable "http_directory" {
 
 variable "http_bind_address" {
   type    = string
-  default = "10.0.1.40"
+  default = "10.18.23.2"
 }
 
 variable "http_bind_port" {
@@ -149,7 +159,13 @@ source "proxmox-iso" "ubuntu-cloud-init" {
   os          = var.vm_os
   sockets     = var.vm_sockets
   vm_id       = var.vm_id
-  iso_file    = "${var.vm_storage_pool}:iso/${var.vm_iso_file}"
+
+  boot_iso {
+    type      = "scsi"
+    iso_file  = "${var.vm_storage_pool}:iso/${var.vm_iso_file}"
+    unmount   = true
+  }
+
   disks {
     type          = var.vm_disk_type
     disk_size     = var.vm_disk_size
@@ -167,9 +183,9 @@ source "proxmox-iso" "ubuntu-cloud-init" {
   }
 
   http_directory          = var.http_directory
-  #http_bind_address       = var.http_bind_address
-  #http_port_min           = var.http_bind_port
-  #http_port_max           = var.http_bind_port
+  http_bind_address       = var.http_bind_address
+  http_port_min           = var.http_bind_port
+  http_port_max           = var.http_bind_port
   cloud_init              = true
   cloud_init_storage_pool = var.vm_storage_pool
 
@@ -177,7 +193,6 @@ source "proxmox-iso" "ubuntu-cloud-init" {
 
   template_description  = "${var.template_name}, generated on ${timestamp()}"
   template_name         = var.template_name
-  unmount_iso           = true
   scsi_controller       = var.scsi_controller
 
   boot_command = [
@@ -191,8 +206,8 @@ source "proxmox-iso" "ubuntu-cloud-init" {
 
   ssh_username      = var.ssh_username
   ssh_password      = var.ssh_password
-  ssh_wait_timeout  = "60m"
-  boot_wait         = "5s"
+  ssh_wait_timeout  = "30m"
+  boot_wait         = "10s"
   task_timeout      = "10m"
   qemu_agent        = true
 }

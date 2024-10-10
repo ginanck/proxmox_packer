@@ -12,9 +12,9 @@ autoinstall:
     mirror-selection:
       primary:
         - country-mirror
-        - arches: [i386, amd64]
+        - arches: [default]
           uri: "http://archive.ubuntu.com/ubuntu"
-        - arches: [s390x, arm64, armhf, powerpc, ppc64el, riscv64]
+        - arches: [default]
           uri: "http://ports.ubuntu.com/ubuntu-ports"
     fallback: abort
     geoip: true

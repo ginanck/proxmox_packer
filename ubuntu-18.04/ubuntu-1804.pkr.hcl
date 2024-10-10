@@ -40,8 +40,17 @@ variable "vm_os" {
 
 variable "vm_id" {
   type    = string
-  default = "901"
+  default = "801"
 }
+
+# Download from (https://askubuntu.com/questions/1186183/how-do-i-obtain-the-debian-installer-for-ubuntu-server-18-04-3-lts)
+# https://old-releases.ubuntu.com/releases/bionic/ubuntu-18.04.3-server-amd64.iso
+# https://old-releases.ubuntu.com/releases/bionic/ubuntu-18.04.5-server-amd64.iso
+
+# Ubuntu Server ISO images with debian-installer continue to be available, including for 18.04.3 LTS. There is no need to use media for an earlier point release. You most likely want ubuntu-18.04.3-server-amd64.iso, though other architectures are available.
+# On the main download page, the Use the traditional installer link takes you to a section for the "Alternative Ubuntu Server installer." These are the non-live ISO images for Ubuntu Server that use debian-installer (as Ubuntu Server has used exclusively for most of its history). This is in contrast to the more recently introduced live server images, which use curtin.
+# The link there for 18.04.3 LTS takes you to http://cdimage.ubuntu.com/releases/18.04.3/release/. The alternative server ISOs have names like ubuntu-18.04.3-server-arm64.iso; this indicates they use debian-installer. This is in contrast to the server ISOs offered at http://releases.ubuntu.com/18.04.3/, which have names like ubuntu-18.04.3-live-server-amd64.iso and use curtin.
+# http://cdimage.ubuntu.com/releases/18.04.3/release/ has other architectures, .torrent and .jigdo files (including for the alternative server ISO), the preinstalled images, and manifest and checksum files for everything offered there.
 
 variable "vm_iso_file" {
   type    = string
@@ -118,11 +127,6 @@ variable "vm_nic_firewall" {
   default = "false"
 }
 
-variable "ssh_fullname" {
-  type    = string
-  default = "ubuntu"
-}
-
 variable "ssh_username" {
   type    = string
   default = "ubuntu"
@@ -135,7 +139,7 @@ variable "ssh_password" {
 
 variable "node_name" {
   type    = string
-  default = "helium"
+  default = "oxygen"
 }
 
 variable "http_directory" {
@@ -145,7 +149,7 @@ variable "http_directory" {
 
 variable "http_bind_address" {
   type    = string
-  default = "10.0.1.40"
+  default = "10.18.23.2"
 }
 
 variable "http_bind_port" {
@@ -164,7 +168,13 @@ source "proxmox-iso" "ubuntu-cloud-init" {
   os          = var.vm_os
   sockets     = var.vm_sockets
   vm_id       = var.vm_id
-  iso_file    = "${var.vm_storage_pool}:iso/${var.vm_iso_file}"
+
+  boot_iso {
+    type      = "scsi"
+    iso_file  = "${var.vm_storage_pool}:iso/${var.vm_iso_file}"
+    unmount   = true
+  }
+
   disks {
     type          = var.vm_disk_type
     disk_size     = var.vm_disk_size
@@ -182,9 +192,9 @@ source "proxmox-iso" "ubuntu-cloud-init" {
   }
 
   http_directory          = var.http_directory
-  #http_bind_address       = var.http_bind_address
-  #http_port_min           = var.http_bind_port
-  #http_port_max           = var.http_bind_port
+  http_bind_address       = var.http_bind_address
+  http_port_min           = var.http_bind_port
+  http_port_max           = var.http_bind_port
   cloud_init              = true
   cloud_init_storage_pool = var.vm_storage_pool
 
@@ -192,30 +202,19 @@ source "proxmox-iso" "ubuntu-cloud-init" {
 
   template_description  = "${var.template_name}, generated on ${timestamp()}"
   template_name         = var.template_name
-  unmount_iso           = true
   scsi_controller       = var.scsi_controller
 
   boot_command        = [
     "<esc><wait>",
     "<f6><wait><esc><wait>",
-    "/install/vmlinuz ",
-    "auto ",
-    "locale=en_US ",
-    "keyboard-configuration/layoutcode=us ",
-    "netcfg/get_hostname=ubuntu-1804 ",
-    "fb=false ",
-    "debconf/frontend=noninteractive ",
-    "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
-    "initrd=/install/initrd.gz ",
-    "console-setup/ask_detect=false ",
-    "setup_bash_url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/late_command.sh ",
-    " -- <enter>"
+    "install auto=true priority=critical url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg debian-installer/locale=en_US keyboard-configuration/layoutcode=us languagechooser/language-name=English",
+    "<enter>"
   ]
 
   ssh_username      = var.ssh_username
   ssh_password      = var.ssh_password
-  ssh_wait_timeout  = "60m"
-  boot_wait         = "5s"
+  ssh_wait_timeout  = "30m"
+  boot_wait         = "10s"
   task_timeout      = "10m"
   qemu_agent        = true
 }

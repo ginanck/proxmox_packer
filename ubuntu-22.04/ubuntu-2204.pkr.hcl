@@ -18,6 +18,16 @@ variable "template_name" {
   default = "ubuntu-2204-template"
 }
 
+variable "template_hostname" {
+  type    = string
+  default = "ubuntu-2004"
+}
+
+variable "locale" {
+  type    = string
+  default = "en_US.UTF-8"
+}
+
 variable "vm_cpu_type" {
   type    = string
   default = "host"
@@ -30,12 +40,12 @@ variable "vm_os" {
 
 variable "vm_id" {
   type    = string
-  default = "903"
+  default = "803"
 }
 
 variable "vm_iso_file" {
   type    = string
-  default = "ubuntu-22.04.4-live-server-amd64.iso"
+  default = "ubuntu-22.04.5-live-server-amd64.iso"
 }
 
 variable "vm_cpu" {
@@ -120,7 +130,7 @@ variable "ssh_password" {
 
 variable "node_name" {
   type    = string
-  default = "helium"
+  default = "oxygen"
 }
 
 variable "http_directory" {
@@ -130,7 +140,7 @@ variable "http_directory" {
 
 variable "http_bind_address" {
   type    = string
-  default = "10.0.1.40"
+  default = "10.18.23.2"
 }
 
 variable "http_bind_port" {
@@ -149,36 +159,41 @@ source "proxmox-iso" "ubuntu-cloud-init" {
   os          = var.vm_os
   sockets     = var.vm_sockets
   vm_id       = var.vm_id
-  iso_file    = "${var.vm_storage_pool}:iso/${var.vm_iso_file}"
+
+  boot_iso {
+    type      = "scsi"
+    iso_file  = "${var.vm_storage_pool}:iso/${var.vm_iso_file}"
+    unmount   = true
+  }
+
   disks {
-    type         = var.vm_disk_type
-    disk_size    = var.vm_disk_size
-    cache_mode   = var.vm_disk_cache
-    format       = var.vm_disk_format
-    io_thread    = var.vm_disk_io_thread
-    discard      = var.vm_disk_discard
-    storage_pool = var.vm_storage_pool
+    type          = var.vm_disk_type
+    disk_size     = var.vm_disk_size
+    cache_mode    = var.vm_disk_cache
+    format        = var.vm_disk_format
+    io_thread     = var.vm_disk_io_thread
+    discard       = var.vm_disk_discard
+    storage_pool  = var.vm_storage_pool
   }
 
   network_adapters {
-    bridge   = var.vm_nic_bridge
-    model    = var.vm_nic_model
-    firewall = var.vm_nic_firewall
+    bridge      = var.vm_nic_bridge
+    model       = var.vm_nic_model
+    firewall    = var.vm_nic_firewall
   }
 
   http_directory          = var.http_directory
-  #http_bind_address       = var.http_bind_address
-  #http_port_min           = var.http_bind_port
-  #http_port_max           = var.http_bind_port
+  http_bind_address       = var.http_bind_address
+  http_port_min           = var.http_bind_port
+  http_port_max           = var.http_bind_port
   cloud_init              = true
   cloud_init_storage_pool = var.vm_storage_pool
 
   insecure_skip_tls_verify = true
 
-  template_description = "${var.template_name}, generated on ${timestamp()}"
-  template_name        = var.template_name
-  unmount_iso          = true
-  scsi_controller      = var.scsi_controller
+  template_description  = "${var.template_name}, generated on ${timestamp()}"
+  template_name         = var.template_name
+  scsi_controller       = var.scsi_controller
 
   boot_command = [
     "<spacebar><wait><spacebar><wait><spacebar><wait><spacebar><wait><spacebar><wait>",
@@ -190,8 +205,8 @@ source "proxmox-iso" "ubuntu-cloud-init" {
 
   ssh_username      = var.ssh_username
   ssh_password      = var.ssh_password
-  ssh_wait_timeout  = "60m"
-  boot_wait         = "5s"
+  ssh_wait_timeout  = "30m"
+  boot_wait         = "10s"
   task_timeout      = "10m"
   qemu_agent        = true
 }

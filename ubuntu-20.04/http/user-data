@@ -12,15 +12,12 @@ autoinstall:
     mirror-selection:
       primary:
         - country-mirror
-        - arches: [i386, amd64]
+        - arches: [default]
           uri: "http://archive.ubuntu.com/ubuntu"
-        - arches: [s390x, arm64, armhf, powerpc, ppc64el, riscv64]
+        - arches: [default]
           uri: "http://ports.ubuntu.com/ubuntu-ports"
     fallback: abort
     geoip: true
-    sources:
-      curtin-ppa:
-        source: ppa:curtin-dev/stable
   update: true
   updates: all
   packages: [openssh-server, perl, open-iscsi, curl, nano]
@@ -65,5 +62,6 @@ autoinstall:
       EOF
     - sed -i -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/g' /target/etc/ssh/sshd_config
     - sed -i -e 's/^#\?PermitRootLogin.*/PermitRootLogin yes/g' /target/etc/ssh/sshd_config
+    - curtin in-target -- apt update
     - curtin in-target -- apt install -qy qemu-guest-agent
     - curtin in-target -- systemctl enable qemu-guest-agent
