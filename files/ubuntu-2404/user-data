@@ -1,6 +1,7 @@
 #cloud-config
 autoinstall:
   version: 1
+  timeout: 1800
   early-commands:
     - sudo systemctl stop ssh
     - sudo apt update

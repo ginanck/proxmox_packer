@@ -1,6 +1,7 @@
 #cloud-config
 autoinstall:
   version: 1
+  timeout: 1800
   early-commands:
     - sudo systemctl stop ssh
     - sudo apt update
@@ -31,7 +32,7 @@ autoinstall:
     layout:
       name: lvm
   identity:
-    hostname: ubuntu-2004
+    hostname: ubuntu-2204
     username: ubuntu
     password: $6$4hSmTb6OW5IQC1iC$ANqpd7HVXmmx01YLGUcVt4cFwB2GTGXqF8ISgZt0Pi.ccmwf7mJSgzRgi8LT5X1idtWT68.NPuKD64cUoIw5Y1
   ssh:
