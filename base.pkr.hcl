@@ -1,7 +1,7 @@
 packer {
   required_plugins {
     name = {
-      version = "~> 1.2.1"
+      version = "~> 1"
       source  = "github.com/hashicorp/proxmox"
     }
   }
@@ -112,6 +112,7 @@ source "proxmox-iso" "proxmox-vm" {
 }
 
 build {
+  name = "template-${var.template_name}"
   sources = [
     "source.proxmox-iso.proxmox-vm"
   ]
