@@ -112,7 +112,7 @@ source "proxmox-iso" "proxmox-vm" {
 }
 
 build {
-  name = "template-${var.template_name}"
+  name = "${var.template_name}"
   sources = [
     "source.proxmox-iso.proxmox-vm"
   ]
