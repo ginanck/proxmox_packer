@@ -10,10 +10,21 @@ This repository contains Packer templates for building machine images across var
    git clone https://github.com/yourusername/packer-templates.git
    cd packer-templates
    
-
 2. **Install Packer**: Ensure [Packer](https://www.packer.io/downloads) is installed on your machine.
 
-3. **Build an Image**:
+3. **Create Hashed Password**:
+
+    ```bash
+    echo "rocky" | mkpasswd -m yescrypt --stdin
+    ```
+
+    or
+
+    ```bash
+    echo "rocky" | openssl passwd -6 -stdin
+    ```
+
+4. **Build an Image**:
 
     just use below command as example
 

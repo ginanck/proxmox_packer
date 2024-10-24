@@ -1,0 +1,14 @@
+vm_iso_file = "AlmaLinux-8.10-x86_64-dvd.iso"
+vm_id = "831"
+
+template_name = "alma-8-template"
+template_hostname = "alma-8"
+
+ssh_username = "alma"
+ssh_password = "alma"
+
+boot_command = [
+    "<tab>",
+    " inst.cmdline inst.nosave=all rd.live.check=0 inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg ",
+    " <enter><wait>"
+]
