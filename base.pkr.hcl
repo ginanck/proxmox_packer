@@ -90,8 +90,8 @@ source "proxmox-iso" "proxmox-vm" {
 
   http_directory          = "files/${var.os_type}-${var.os_version}"
   http_bind_address       = var.http_bind_address
-  http_port_min           = var.http_bind_port
-  http_port_max           = var.http_bind_port
+  # http_port_min           = var.http_bind_port
+  # http_port_max           = var.http_bind_port
   cloud_init              = true
   cloud_init_storage_pool = var.vm_storage_pool
 

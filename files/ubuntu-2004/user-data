@@ -5,6 +5,9 @@ autoinstall:
   early-commands:
     - sudo systemctl stop ssh
     - sudo apt update
+    - sudo cloud-init clean
+    - sudo cloud-init init
+    - sudo netplan apply
   locale: en_US.UTF-8
   keyboard:
     layout: us
@@ -21,7 +24,7 @@ autoinstall:
     geoip: true
   update: true
   updates: all
-  packages: [openssh-server, perl, open-iscsi, curl, nano]
+  packages: [perl, open-iscsi, curl, nano]
   network:
     network:
       version: 2

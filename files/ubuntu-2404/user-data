@@ -31,6 +31,7 @@ autoinstall:
   storage:
     layout:
       name: lvm
+      vg: vg00
   identity:
     hostname: ubuntu-2404
     username: ubuntu
