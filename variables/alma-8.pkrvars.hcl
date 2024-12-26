@@ -1,4 +1,4 @@
-vm_iso_file = "AlmaLinux-8.10-x86_64-dvd.iso"
+vm_iso_file = "AlmaLinux-8.10-x86_64-minimal.iso"
 vm_id = "831"
 
 template_name = "alma-8-template"

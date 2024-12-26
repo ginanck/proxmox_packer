@@ -1,4 +1,4 @@
-vm_iso_file = "Rocky-9.4-x86_64-dvd.iso"
+vm_iso_file = "Rocky-9.5-x86_64-minimal.iso"
 vm_id = "822"
 
 template_name = "rocky-9-template"

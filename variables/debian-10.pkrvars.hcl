@@ -1,4 +1,4 @@
-vm_iso_file = "debian-10.10.0-amd64-DVD-1.iso"
+vm_iso_file = "debian-10.13.0-amd64-DVD-1.iso"
 vm_id = "811"
 
 template_name = "debian-10-template"

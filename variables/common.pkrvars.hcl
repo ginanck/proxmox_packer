@@ -23,7 +23,7 @@ vm_nic_firewall = "false"
 
 node_name = "oxygen"
 
-http_bind_address = "10.18.23.2"
+http_bind_address = "10.50.0.2"
 http_bind_port = "8080"
 
 os_type = ""
