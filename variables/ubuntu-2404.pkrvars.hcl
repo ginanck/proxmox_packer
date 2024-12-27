@@ -19,7 +19,7 @@ boot_command = [
 ]
 
 provisioning_scripts = [
-  "scripts/debian-based/01-update.sh",
-  "scripts/debian-based/02-packages.sh",
-  "scripts/debian-based/03-cleanup.sh"
+  "scripts/common/debian/01-update.sh",
+  "scripts/common/debian/02-packages.sh",
+  "scripts/common/debian/03-cleanup.sh"
 ]

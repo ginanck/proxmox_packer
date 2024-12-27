@@ -14,7 +14,7 @@ boot_command = [
 ]
 
 provisioning_scripts = [
-  "scripts/rhel-based/01-update.sh",
-  "scripts/rhel-based/02-packages.sh",
-  "scripts/rhel-based/03-cleanup.sh"
+  "scripts/common/rhel/01-update.sh",
+  "scripts/common/rhel/02-packages.sh",
+  "scripts/common/rhel/03-cleanup.sh"
 ]

@@ -14,4 +14,3 @@ apt-get install -y \
     cloud-guest-utils \
     gdisk \
     dnsutils
-systemctl enable qemu-guest-agent
