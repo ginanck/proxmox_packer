@@ -54,6 +54,11 @@ variable "http_bind_port" {}
 variable "os_type" {}
 variable "os_version" {}
 
+variable "provisioning_scripts" {
+  type = list(string)
+  description = "List of scripts to run during provisioning"
+}
+
 source "proxmox-iso" "proxmox-vm" {
   proxmox_url = var.proxmox_url
   username    = var.proxmox_username
@@ -123,6 +128,13 @@ build {
     ]
     expect_disconnect = true
     valid_exit_codes  = [0, 2300218]
+  }
+
+  provisioner "shell" {
+    scripts = var.provisioning_scripts
+    expect_disconnect = true
+    valid_exit_codes = [0, 2300218]
+    execute_command = "sudo -S bash '{{.Path}}'"
   }
 
 }

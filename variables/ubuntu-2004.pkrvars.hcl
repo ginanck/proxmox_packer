@@ -17,3 +17,9 @@ boot_command = [
     " fsck.mode=skip",
     "<enter><wait>"
 ]
+
+provisioning_scripts = [
+  "scripts/debian-based/01-update.sh",
+  "scripts/debian-based/02-packages.sh",
+  "scripts/debian-based/03-cleanup.sh"
+]

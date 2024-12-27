@@ -25,3 +25,9 @@ boot_command = [
     "languagechooser/language-name=English ",
     "<enter>"
 ]
+
+provisioning_scripts = [
+  "scripts/debian-based/01-update.sh",
+  "scripts/debian-based/02-packages.sh",
+  "scripts/debian-based/03-cleanup.sh"
+]

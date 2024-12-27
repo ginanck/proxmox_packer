@@ -24,7 +24,7 @@ autoinstall:
     geoip: true
   update: true
   updates: all
-  packages: [perl, open-iscsi, curl, nano]
+  packages: [openssh-server]
   network:
     network:
       version: 2

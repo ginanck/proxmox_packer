@@ -12,3 +12,11 @@ build:
 		-var 'os_type=$(OS_TYPE)' \
 		-var 'os_version=$(OS_VERSION)' \
 		$(PACKER_BASE)
+
+debug:
+	PACKER_LOG=1 PACKER_LOG_PATH=packer.log packer build -debug \
+		-var-file=$(PACKER_VARS)/common.pkrvars.hcl \
+		-var-file=$(PACKER_VARS)/$(OS_TYPE)-$(OS_VERSION).pkrvars.hcl \
+		-var 'os_type=$(OS_TYPE)' \
+		-var 'os_version=$(OS_VERSION)' \
+		$(PACKER_BASE)

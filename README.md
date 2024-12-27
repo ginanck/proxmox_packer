@@ -13,6 +13,7 @@ This repository contains Packer templates for building machine images across var
 2. **Install Packer**: Ensure [Packer](https://www.packer.io/downloads) is installed on your machine.
 
 3. **Create Hashed Password**:
+Below hashed password is used in `preceed.cfg` or `user-data` configuration files
 
     ```bash
     echo "rocky" | mkpasswd -m yescrypt --stdin
@@ -32,12 +33,31 @@ This repository contains Packer templates for building machine images across var
     make build OS_TYPE=ubuntu OS_VERSION=1804
     ```
 
+    or
+
+    ```bash
+    make build OS_TYPE=debian OS_VERSION=10
+    ```
+
+    or build image with debug mode
+
+    ```bash
+    make debug OS_TYPE=rocky OS_VERSION=8
+    ```
+
 ## Available Templates
 
 - **ubuntu-1804**
 - **ubuntu-2004**
 - **ubuntu-2204**
-- **ubunut-2404**
+- **ubuntu-2404**
+- **debian-10**
+- **debian-11**
+- **debian-12**
+- **alma-8**
+- **alma-9**
+- **rocky-8**
+- **rocky-9**
 
 ## Requirements
 

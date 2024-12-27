@@ -12,3 +12,9 @@ boot_command = [
     " inst.cmdline inst.nosave=all rd.live.check=0 inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg ",
     " <enter><wait>"
 ]
+
+provisioning_scripts = [
+  "scripts/rhel-based/01-update.sh",
+  "scripts/rhel-based/02-packages.sh",
+  "scripts/rhel-based/03-cleanup.sh"
+]
