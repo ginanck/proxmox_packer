@@ -1,5 +1,5 @@
 vm_iso_file = "Rocky-8.10-x86_64-minimal.iso"
-vm_id = "821"
+vm_id = "8100"
 
 template_name = "rocky-8-template"
 template_hostname = "rocky-8"

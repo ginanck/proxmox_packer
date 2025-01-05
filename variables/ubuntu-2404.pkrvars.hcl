@@ -1,5 +1,5 @@
 vm_iso_file = "ubuntu-24.04.1-live-server-amd64.iso"
-vm_id = "804"
+vm_id = "8053"
 
 template_name = "ubuntu-2404-template"
 template_hostname = "ubuntu-2404"

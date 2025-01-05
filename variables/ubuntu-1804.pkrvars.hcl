@@ -8,7 +8,7 @@
 # http://cdimage.ubuntu.com/releases/18.04.3/release/ has other architectures, .torrent and .jigdo files (including for the alternative server ISO), the preinstalled images, and manifest and checksum files for everything offered there.
 
 vm_iso_file = "ubuntu-18.04.3-server-amd64.iso"
-vm_id = "801"
+vm_id = "8050"
 
 template_name = "ubuntu-1804-template"
 template_hostname = "ubuntu-1804"

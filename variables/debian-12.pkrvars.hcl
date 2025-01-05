@@ -1,5 +1,5 @@
 vm_iso_file = "debian-12.8.0-amd64-DVD-1.iso"
-vm_id = "813"
+vm_id = "8002"
 
 template_name = "debian-12-template"
 template_hostname = "debian-12"
