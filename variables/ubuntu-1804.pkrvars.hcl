@@ -29,5 +29,6 @@ boot_command = [
 provisioning_scripts = [
   "scripts/common/debian/01-update.sh",
   "scripts/ubuntu-1804/02-packages.sh",
-  "scripts/ubuntu-1804/03-cleanup.sh"
+  "scripts/common/debian/03-cleanup.sh",
+  "scripts/ubuntu-1804/04-grub.sh"
 ]
