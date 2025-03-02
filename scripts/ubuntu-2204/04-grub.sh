@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# NOTE: boot_command issue
+# https://github.com/hashicorp/packer-plugin-vsphere/issues/421
+
 sed -i 's/^GRUB_DEFAULT=.*$/GRUB_DEFAULT="0"/' /etc/default/grub
 sed -i 's/^GRUB_TIMEOUT_STYLE=.*$/GRUB_TIMEOUT_STYLE="hidden"/' /etc/default/grub
 sed -i 's/^GRUB_TIMEOUT=.*$/GRUB_TIMEOUT="2"/' /etc/default/grub
