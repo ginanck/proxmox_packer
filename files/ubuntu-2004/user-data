@@ -22,15 +22,21 @@ autoinstall:
           uri: "http://ports.ubuntu.com/ubuntu-ports"
     fallback: abort
     geoip: true
-  update: true
-  updates: all
+  update: false
+  # updates: security
   packages: [openssh-server]
   network:
-    network:
-      version: 2
-      ethernets:
-        ens18:
-          dhcp4: yes
+    version: 2
+    renderer: networkd
+    ethernets:
+      ens18:
+        match:
+          name: en*
+        dhcp4: true
+      eth0:
+        match:
+          name: eth*
+        dhcp4: true
   storage:
     layout:
       name: lvm
@@ -56,11 +62,12 @@ autoinstall:
           - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKPfGz+sMQ+ZwXjvgS0W4SJOoeJQA72Kx24tRW+Uf5p gkorkmaz"
   late-commands:
     - |
-      rm /target/etc/netplan/00-installer-config.yaml
+      rm -rf /target/etc/netplan/00-installer-config.yaml
+      IFACE=$(ip -o link show | grep -v "lo" | awk -F': ' '{print $2}' | head -n1)
       cat <<EOF > /target/etc/netplan/80-my.yaml
       network:
         ethernets:
-          ens18:
+          $IFACE:
             dhcp4: true
         version: 2
       EOF

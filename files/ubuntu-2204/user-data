@@ -19,8 +19,8 @@ autoinstall:
           uri: "http://ports.ubuntu.com/ubuntu-ports"
     fallback: abort
     geoip: true
-  update: true
-  updates: all
+  update: false
+  # updates: security
   packages: [openssh-server]
   network:
     network:
