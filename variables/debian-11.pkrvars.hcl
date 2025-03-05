@@ -21,5 +21,5 @@ provisioning_scripts = [
   "scripts/debian/01-update.sh",
   "scripts/common/debian/02-packages.sh",
   "scripts/common/debian/03-cleanup.sh",
-  "scripts/debian/04-set-hostname.sh"
+  "scripts/debian-11/04-set-hostname.sh"
 ]
