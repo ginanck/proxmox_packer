@@ -13,4 +13,5 @@ apt-get install -y \
     cloud-init \
     cloud-guest-utils \
     gdisk \
-    dnsutils
+    dnsutils \
+    openvswitch-switch

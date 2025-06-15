@@ -22,7 +22,7 @@ autoinstall:
           uri: "http://ports.ubuntu.com/ubuntu-ports"
     fallback: abort
     geoip: true
-  update: false
+  update: true
   # updates: security
   packages: [openssh-server]
   network:
@@ -40,6 +40,7 @@ autoinstall:
   storage:
     layout:
       name: lvm
+      vg: vg00
   identity:
     hostname: ubuntu-2004
     username: ubuntu
@@ -60,9 +61,11 @@ autoinstall:
         passwd: $6$VzZPpEDvJGkSOxz8$KSA4PPFlVAaBJ/nlqNK1V0Ys1aMOl21eqIkfWD5K.VwRujpw4NBxETXkJ03ucWDUKl4hK7K5f1GsOray/12g4/
         ssh_authorized_keys:
           - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKPfGz+sMQ+ZwXjvgS0W4SJOoeJQA72Kx24tRW+Uf5p gkorkmaz"
+    power_state:
+      mode: reboot
   late-commands:
     - |
-      rm -rf /target/etc/netplan/00-installer-config.yaml
+      rm /target/etc/netplan/00-installer-config.yaml
       IFACE=$(ip -o link show | grep -v "lo" | awk -F': ' '{print $2}' | head -n1)
       cat <<EOF > /target/etc/netplan/80-my.yaml
       network:
@@ -71,6 +74,7 @@ autoinstall:
             dhcp4: true
         version: 2
       EOF
+    - chmod 600 /target/etc/netplan/80-my.yaml
     - sed -i -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/g' /target/etc/ssh/sshd_config
     - sed -i -e 's/^#\?PermitRootLogin.*/PermitRootLogin yes/g' /target/etc/ssh/sshd_config
     - curtin in-target -- apt update

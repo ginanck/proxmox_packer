@@ -1,4 +1,4 @@
-vm_iso_file = "ubuntu-20.04.6-live-server-amd64.iso"
+vm_iso_file = "ubuntu-20.04.5-live-server-amd64.iso"
 vm_id = "8051"
 
 template_name = "ubuntu-2004-template"

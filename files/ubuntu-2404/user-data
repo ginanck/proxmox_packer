@@ -58,6 +58,8 @@ autoinstall:
         passwd: $6$VzZPpEDvJGkSOxz8$KSA4PPFlVAaBJ/nlqNK1V0Ys1aMOl21eqIkfWD5K.VwRujpw4NBxETXkJ03ucWDUKl4hK7K5f1GsOray/12g4/
         ssh_authorized_keys:
           - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEKPfGz+sMQ+ZwXjvgS0W4SJOoeJQA72Kx24tRW+Uf5p gkorkmaz"
+    power_state:
+      mode: reboot
   late-commands:
     - |
       rm /target/etc/netplan/00-installer-config.yaml
@@ -69,6 +71,7 @@ autoinstall:
             dhcp4: true
         version: 2
       EOF
+    - chmod 600 /target/etc/netplan/80-my.yaml
     - sed -i -e 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/g' /target/etc/ssh/sshd_config
     - sed -i -e 's/^#\?PermitRootLogin.*/PermitRootLogin yes/g' /target/etc/ssh/sshd_config
     - curtin in-target -- apt update
