@@ -21,7 +21,7 @@ vm_nic_bridge = "vmbr1"
 vm_nic_model = "virtio"
 vm_nic_firewall = "false"
 
-node_name = "oxygen"
+node_name = "carbon"
 
 http_bind_address = "10.50.0.2"
 http_bind_port = "8080"
