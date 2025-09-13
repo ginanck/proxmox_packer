@@ -49,3 +49,8 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Build artifacts and ISOs
+builds/
+*.iso
+*.iso.backup-*
+packer.log
