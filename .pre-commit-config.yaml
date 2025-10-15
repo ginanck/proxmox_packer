@@ -8,6 +8,12 @@ repos:
     rev: v8.28.0
     hooks:
       - id: gitleaks
+        name: Detect hardcoded secrets
+        entry: gitleaks
+        args: ['detect', '--source', '.', '--verbose']
+        language: system
+        pass_filenames: false
+        always_run: true
 
   # OpenTofu/Terraform
   - repo: https://github.com/tofuutils/pre-commit-opentofu
