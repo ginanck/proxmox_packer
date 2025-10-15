@@ -1,4 +1,3 @@
-
 # Proxmox Packer Templates
 
 This repository contains comprehensive Packer configurations for creating VM templates in Proxmox Virtual Environment. It supports both Linux and Windows operating systems with automated provisioning and customization.
@@ -210,7 +209,7 @@ Upload these ISO files to your Proxmox storage:
 
 ### **Ubuntu**
 - **18.04**: `ubuntu-18.04.6-server-amd64.iso`
-- **20.04**: `ubuntu-20.04.6-live-server-amd64.iso`  
+- **20.04**: `ubuntu-20.04.6-live-server-amd64.iso`
 - **22.04**: `ubuntu-22.04.5-live-server-amd64.iso`
 - **24.04**: `ubuntu-24.04.1-live-server-amd64.iso`
 
@@ -313,7 +312,7 @@ choco install -y postman
 ### **Modifying VM Settings**
 Edit the relevant `.pkrvars.hcl` file in the `variables/` directory:
 - CPU cores, RAM, disk size
-- Network configuration  
+- Network configuration
 - Storage pool settings
 
 ### **Custom Automation Files**
@@ -337,7 +336,7 @@ The project uses a hierarchical script structure that promotes code reuse:
 #### **`/scripts/common/[os-family]/`**
 Contains scripts shared across OS family versions:
 - **`/scripts/common/debian/`** - Shared Ubuntu/Debian scripts
-- **`/scripts/common/rhel/`** - Shared Rocky/Alma scripts  
+- **`/scripts/common/rhel/`** - Shared Rocky/Alma scripts
 - **`/scripts/common/windows/`** - Shared Windows scripts
 
 #### **`/scripts/[os-version]/`**
@@ -432,7 +431,7 @@ Enable detailed logging:
 # Linux builds
 PACKER_LOG=1 PACKER_LOG_PATH=packer.log make debug OS_TYPE=ubuntu OS_VERSION=2204
 
-# Windows builds  
+# Windows builds
 PACKER_LOG=1 PACKER_LOG_PATH=packer.log make debug-windows OS_TYPE=windows OS_VERSION=11
 ```
 
@@ -526,7 +525,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## 📚 **Additional Documentation**
 
 - **[Proxmox VE Documentation](https://pve.proxmox.com/pve-docs/)** - Official Proxmox documentation
-- **[Packer Documentation](https://www.packer.io/docs)** - Official Packer documentation  
+- **[Packer Documentation](https://www.packer.io/docs)** - Official Packer documentation
 - **[Cloud-init Documentation](https://cloud-init.readthedocs.io/)** - Cloud-init configuration guide
 - **[Windows Deployment](https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/)** - Windows deployment documentation
 
