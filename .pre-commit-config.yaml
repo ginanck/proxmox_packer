@@ -1,5 +1,5 @@
 ---
-default_stages: [pre-commit, pre-push, manual]
+default_stages: [pre-commit, manual]
 default_install_hook_types: [pre-commit, pre-push, commit-msg, prepare-commit-msg]
 
 repos:
