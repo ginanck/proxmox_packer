@@ -1,21 +1,21 @@
 vm_iso_file = "ubuntu-22.04.5-live-server-amd64.iso"
-vm_id = "8052"
+vm_id       = "8052"
 
-template_name = "ubuntu-2204-template"
+template_name     = "ubuntu-2204-template"
 template_hostname = "ubuntu-2204"
 
 ssh_username = "ubuntu"
 ssh_password = "ubuntu"
 
 boot_command = [
-    "<spacebar><wait><spacebar><wait><spacebar><wait><spacebar><wait><spacebar><wait>",
-    "e<wait>",
-    "<down><down><down><end>",
-    " autoinstall ds=nocloud\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/",
-    " locale=en_US",
-    " keyboard-configuration/layoutcode=us",
-    " fsck.mode=skip",
-    "<f10>"
+  "<spacebar><wait><spacebar><wait><spacebar><wait><spacebar><wait><spacebar><wait>",
+  "e<wait>",
+  "<down><down><down><end>",
+  " autoinstall ds=nocloud\\;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/",
+  " locale=en_US",
+  " keyboard-configuration/layoutcode=us",
+  " fsck.mode=skip",
+  "<f10>"
 ]
 
 provisioning_scripts = [

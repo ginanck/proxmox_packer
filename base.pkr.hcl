@@ -55,7 +55,7 @@ variable "os_type" {}
 variable "os_version" {}
 
 variable "provisioning_scripts" {
-  type = list(string)
+  type        = list(string)
   description = "List of scripts to run during provisioning"
 }
 
@@ -72,29 +72,29 @@ source "proxmox-iso" "proxmox-vm" {
   vm_id       = var.vm_id
 
   boot_iso {
-    type      = "scsi"
-    iso_file  = "${var.vm_storage_pool}:iso/${var.vm_iso_file}"
-    unmount   = true
+    type     = "scsi"
+    iso_file = "${var.vm_storage_pool}:iso/${var.vm_iso_file}"
+    unmount  = true
   }
 
   disks {
-    type          = var.vm_disk_type
-    disk_size     = var.vm_disk_size
-    cache_mode    = var.vm_disk_cache
-    format        = var.vm_disk_format
-    io_thread     = var.vm_disk_io_thread
-    discard       = var.vm_disk_discard
-    storage_pool  = var.vm_storage_pool
+    type         = var.vm_disk_type
+    disk_size    = var.vm_disk_size
+    cache_mode   = var.vm_disk_cache
+    format       = var.vm_disk_format
+    io_thread    = var.vm_disk_io_thread
+    discard      = var.vm_disk_discard
+    storage_pool = var.vm_storage_pool
   }
 
   network_adapters {
-    bridge        = var.vm_nic_bridge
-    model         = var.vm_nic_model
-    firewall      = var.vm_nic_firewall
+    bridge   = var.vm_nic_bridge
+    model    = var.vm_nic_model
+    firewall = var.vm_nic_firewall
   }
 
-  http_directory          = "files/${var.os_type}-${var.os_version}"
-  http_bind_address       = var.http_bind_address
+  http_directory    = "files/${var.os_type}-${var.os_version}"
+  http_bind_address = var.http_bind_address
   # http_port_min           = var.http_bind_port
   # http_port_max           = var.http_bind_port
   cloud_init              = true
@@ -102,18 +102,18 @@ source "proxmox-iso" "proxmox-vm" {
 
   insecure_skip_tls_verify = true
 
-  template_description  = "${var.template_name}, generated on ${timestamp()}"
-  template_name         = var.template_name
-  scsi_controller       = var.vm_scsi_controller
+  template_description = "${var.template_name}, generated on ${timestamp()}"
+  template_name        = var.template_name
+  scsi_controller      = var.vm_scsi_controller
 
-  boot_command          = var.boot_command
+  boot_command = var.boot_command
 
-  ssh_username          = var.ssh_username
-  ssh_password          = var.ssh_password
-  ssh_wait_timeout      = var.ssh_wait_timeout
-  boot_wait             = var.boot_wait
-  task_timeout          = var.task_timeout
-  qemu_agent            = var.qemu_agent
+  ssh_username     = var.ssh_username
+  ssh_password     = var.ssh_password
+  ssh_wait_timeout = var.ssh_wait_timeout
+  boot_wait        = var.boot_wait
+  task_timeout     = var.task_timeout
+  qemu_agent       = var.qemu_agent
 }
 
 build {
@@ -131,10 +131,10 @@ build {
   }
 
   provisioner "shell" {
-    scripts = var.provisioning_scripts
+    scripts           = var.provisioning_scripts
     expect_disconnect = true
-    valid_exit_codes = [0, 2300218]
-    execute_command = "sudo -S bash '{{.Path}}'"
+    valid_exit_codes  = [0, 2300218]
+    execute_command   = "sudo -S bash '{{.Path}}'"
   }
 
 }

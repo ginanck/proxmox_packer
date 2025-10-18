@@ -8,22 +8,22 @@
 # http://cdimage.ubuntu.com/releases/18.04.3/release/ has other architectures, .torrent and .jigdo files (including for the alternative server ISO), the preinstalled images, and manifest and checksum files for everything offered there.
 
 vm_iso_file = "ubuntu-18.04.3-server-amd64.iso"
-vm_id = "8050"
+vm_id       = "8050"
 
-template_name = "ubuntu-1804-template"
+template_name     = "ubuntu-1804-template"
 template_hostname = "ubuntu-1804"
 
 ssh_username = "ubuntu"
 ssh_password = "ubuntu"
 
 boot_command = [
-    "<esc><wait>",
-    "<f6><wait><esc><wait>",
-    "install auto=true priority=critical url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
-    "debian-installer/locale=en_US ",
-    "keyboard-configuration/layoutcode=us ",
-    "languagechooser/language-name=English ",
-    "<enter>"
+  "<esc><wait>",
+  "<f6><wait><esc><wait>",
+  "install auto=true priority=critical url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
+  "debian-installer/locale=en_US ",
+  "keyboard-configuration/layoutcode=us ",
+  "languagechooser/language-name=English ",
+  "<enter>"
 ]
 
 provisioning_scripts = [
