@@ -1,10 +1,11 @@
-proxmox_url       = ""
-proxmox_username  = ""
-proxmox_api_token = ""
+proxmox_url        = ""
+proxmox_username   = ""
+proxmox_api_token  = ""
 
-locale = "en_US.UTF-8"
+locale             = "en_US.UTF-8"
 
 vm_cpu_type        = "host"
+vm_bios            = "seabios"
 vm_os              = "l26"
 vm_cpu             = "2"
 vm_sockets         = "1"
@@ -21,15 +22,16 @@ vm_nic_bridge      = "vmbr1"
 vm_nic_model       = "virtio"
 vm_nic_firewall    = "false"
 
-node_name = "carbon"
+node_name          = "carbon"
 
-http_bind_address = "10.50.0.2"
-http_bind_port    = "8080"
+http_bind_address  = "10.50.0.2"
+http_port_min      = "8080"
+http_port_max      = "8080"
 
-os_type    = ""
-os_version = ""
+os_type            = ""
+os_version         = ""
 
-boot_wait        = "10s"
-task_timeout     = "10m"
-qemu_agent       = true
-ssh_wait_timeout = "30m"
+boot_wait          = "10s"
+task_timeout       = "10m"
+qemu_agent         = true
+ssh_wait_timeout   = "30m"
