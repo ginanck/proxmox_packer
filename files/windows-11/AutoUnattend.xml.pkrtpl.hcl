@@ -10,59 +10,51 @@
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <OOBE>
                 <HideEULAPage>true</HideEULAPage>
-                <HideLocalAccountScreen>false</HideLocalAccountScreen>
+                <HideLocalAccountScreen>true</HideLocalAccountScreen>
                 <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
                 <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
                 <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
                 <ProtectYourPC>3</ProtectYourPC>
                 <UnattendEnableRetailDemo>false</UnattendEnableRetailDemo>
+                <SkipMachineOOBE>true</SkipMachineOOBE>
+                <SkipUserOOBE>true</SkipUserOOBE>
             </OOBE>
             <UserAccounts>
                 <AdministratorPassword>
-                    <Value>UABhAHMAcwB3ADAAcgBkADEAQQBkAG0AaQBuAGkAcwB0AHIAYQB0AG8AcgBQAGEAcwBzAHcAbwByAGQA</Value>
-                    <PlainText>false</PlainText>
+                    <Value>${win_account_builtin_administrator_password}</Value>
+                    <PlainText>true</PlainText>
                 </AdministratorPassword>
                 <LocalAccounts>
                     <LocalAccount wcm:action="add">
                         <Password>
-                            <Value>cABhAGMAawBlAHIAUABhAHMAcwB3AG8AcgBkAA==</Value>
-                            <PlainText>false</PlainText>
+                            <Value>${win_account_packer_password}</Value>
+                            <PlainText>true</PlainText>
                         </Password>
                         <DisplayName>packer</DisplayName>
                         <Name>packer</Name>
-                        <Description>Packer</Description>
+                        <Description>packer</Description>
                         <Group>Administrators</Group>
                     </LocalAccount>
                     <LocalAccount wcm:action="add">
                         <Password>
-                            <Value>YQBuAHMAaQBiAGwAZQBQAGEAcwBzAHcAbwByAGQA</Value>
-                            <PlainText>false</PlainText>
+                            <Value>${win_account_ansible_password}</Value>
+                            <PlainText>true</PlainText>
                         </Password>
-                        <DisplayName>Ansible</DisplayName>
-                        <Description>Ansible Automation</Description>
+                        <DisplayName>ansible</DisplayName>
+                        <Description>ansible automation</Description>
                         <Name>ansible</Name>
                         <Group>Administrators</Group>
-                    </LocalAccount>
-                    <LocalAccount wcm:action="add">
-                        <Password>
-                            <Value>UABhAHMAcwB3ADAAcgBkADEAUABhAHMAcwB3AG8AcgBkAA==</Value>
-                            <PlainText>false</PlainText>
-                        </Password>
-                        <DisplayName>Administrator</DisplayName>
-                        <Group>Administrators</Group>
-                        <Name>administrator</Name>
-                        <Description>Local Admin</Description>
                     </LocalAccount>
                 </LocalAccounts>
             </UserAccounts>
             <AutoLogon>
                 <Password>
-                    <Value>cABhAGMAawBlAHIAUABhAHMAcwB3AG8AcgBkAA==</Value>
-                    <PlainText>false</PlainText>
+                    <Value>${win_account_packer_password}</Value>
+                    <PlainText>true</PlainText>
                 </Password>
                 <Username>packer</Username>
                 <Enabled>true</Enabled>
-                <LogonCount>1</LogonCount>
+                <LogonCount>2</LogonCount>
             </AutoLogon>
             <TimeZone>FLE Standard Time</TimeZone>
             <FirstLogonCommands>
@@ -70,91 +62,25 @@
                     <Order>1</Order>
                     <Description>Install VirtIO Guest Tools</Description>
                     <RequiresUserInput>false</RequiresUserInput>
-                    <CommandLine>cmd.exe /c F:\virtio-win-guest-tools.exe /S /norestart</CommandLine>
+                    <CommandLine>cmd.exe /c ${win_iso_virtio_drive}\virtio-win-guest-tools.exe /S /norestart</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
                     <Order>2</Order>
                     <Description>Start QEMU Guest Agent</Description>
                     <RequiresUserInput>false</RequiresUserInput>
-                    <CommandLine>cmd.exe /c powershell -Command &quot;Start-Service -Name &apos;QEMU-GA&apos;&quot;</CommandLine>
+                    <CommandLine>powershell -Command &quot;Start-Service -Name &apos;QEMU-GA&apos;&quot;</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File E:\Configure-WinRM.ps1</CommandLine>
+                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-WinRM.ps1</CommandLine>
                     <Order>3</Order>
                     <RequiresUserInput>false</RequiresUserInput>
-                    <Description>Configure WinRM</Description>
+                    <Description>Configure WinRM for Remote Access</Description>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
+                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-WindowsOptimizations.ps1</CommandLine>
                     <Order>4</Order>
-                    <CommandLine>cmd /c powershell -Command &quot;Set-NetConnectionProfile -NetworkCategory Private&quot;</CommandLine>
-                    <Description>Set Network to Private</Description>
                     <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c winrm quickconfig -q</CommandLine>
-                    <Order>5</Order>
-                    <RequiresUserInput>false</RequiresUserInput>
-                    <Description>Enable WinRM</Description>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c winrm set winrm/config/service/auth @{Basic=&quot;true&quot;}</CommandLine>
-                    <Description>WinRM config auth</Description>
-                    <Order>6</Order>
-                    <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <CommandLine>cmd /c winrm set winrm/config/service @{AllowUnencrypted=&quot;true&quot;}</CommandLine>
-                    <Order>7</Order>
-                    <RequiresUserInput>false</RequiresUserInput>
-                    <Description>WinRM allow unencrypted</Description>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <Order>8</Order>
-                    <CommandLine>cmd /c winrm set winrm/config/winrs @{MaxMemoryPerShellMB=&quot;2048&quot;}</CommandLine>
-                    <Description>Increase WinRM memory limit</Description>
-                    <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <Order>9</Order>
-                    <CommandLine>cmd /c winrm set winrm/config/client/auth @{Basic=&quot;true&quot;}</CommandLine>
-                    <Description>WinRM client auth</Description>
-                    <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <Order>10</Order>
-                    <CommandLine>cmd /c winrm set winrm/config/client @{AllowUnencrypted=&quot;true&quot;}</CommandLine>
-                    <Description>WinRM client allow unencrypted</Description>
-                    <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <Order>11</Order>
-                    <CommandLine>cmd /c reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v LocalAccountTokenFilterPolicy /t REG_DWORD /d 1 /f</CommandLine>
-                    <Description>Enable remote access for local accounts</Description>
-                    <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <Order>12</Order>
-                    <CommandLine>cmd /c netsh advfirewall firewall set rule name=&quot;Windows Remote Management (HTTP-In)&quot; new action=allow remoteip=any</CommandLine>
-                    <Description>WinRM firewall rule</Description>
-                    <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <Order>13</Order>
-                    <CommandLine>cmd /c net stop winrm</CommandLine>
-                    <Description>Stop WinRM</Description>
-                    <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <Order>14</Order>
-                    <CommandLine>cmd /c net start winrm</CommandLine>
-                    <Description>Start WinRM</Description>
-                    <RequiresUserInput>false</RequiresUserInput>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <Order>15</Order>
-                    <CommandLine>powershell -ExecutionPolicy Bypass -File E:\Install-CloudBase.ps1 -EnableCredSSP</CommandLine>
-                    <Description>Install Cloudbase-Init</Description>
-                    <RequiresUserInput>false</RequiresUserInput>
+                    <Description>Configure Windows Optimizations</Description>
                 </SynchronousCommand>
             </FirstLogonCommands>
         </component>
@@ -216,7 +142,7 @@
                     <InstallFrom>
                         <MetaData wcm:action="add">
                             <Key>/IMAGE/INDEX</Key>
-                            <Value>6</Value>
+                            <Value>${windows_image_index}</Value>
                         </MetaData>
                     </InstallFrom>
                 </OSImage>
@@ -232,6 +158,21 @@
                     <Path>cmd /c reg add HKLM\SYSTEM\Setup\LabConfig /v BypassTPMCheck /t REG_DWORD /d 1 /f</Path>
                     <Order>1</Order>
                     <Description>Bypass TPM Check</Description>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Path>cmd /c reg add HKLM\SYSTEM\Setup\LabConfig /v BypassRAMCheck /t REG_DWORD /d 1 /f</Path>
+                    <Order>2</Order>
+                    <Description>Bypass RAM Check</Description>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Path>cmd /c reg add HKLM\SYSTEM\Setup\LabConfig /v BypassSecureBootCheck /t REG_DWORD /d 1 /f</Path>
+                    <Order>3</Order>
+                    <Description>Bypass Secure Boot Check</Description>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f</Path>
+                    <Order>4</Order>
+                    <Description>Disable Windows Defender</Description>
                 </RunSynchronousCommand>
             </RunSynchronous>
         </component>

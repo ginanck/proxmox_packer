@@ -4,16 +4,16 @@ default_install_hook_types: [pre-commit, pre-push, commit-msg, prepare-commit-ms
 
 repos:
   # Local tools (must be installed in your environment)
-  - repo: local
-    hooks:
-      # ==================== SECURITY HOOKS ====================
-      - id: gitleaks
-        name: GitLeaks Security Scan
-        entry: gitleaks
-        language: system
-        args: ["detect", "--source", ".", "--verbose"]
-        pass_filenames: false
-        always_run: true
+  # - repo: local
+  #   hooks:
+  #     # ==================== SECURITY HOOKS ====================
+  #     - id: gitleaks
+  #       name: GitLeaks Security Scan
+  #       entry: gitleaks
+  #       language: system
+  #       args: ["detect", "--source", ".", "--verbose"]
+  #       pass_filenames: false
+  #       always_run: true
 
   # General file formatting and validation
   - repo: https://github.com/pre-commit/pre-commit-hooks

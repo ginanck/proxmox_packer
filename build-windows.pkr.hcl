@@ -44,8 +44,8 @@ variable "template_name" {}
 variable "template_hostname" {}
 
 variable "communicator" {}
-variable "winrm_username" {}
-variable "winrm_password" {}
+# variable "winrm_username" {}
+# variable "winrm_password" {}
 variable "winrm_timeout" {}
 variable "winrm_port" {}
 variable "winrm_use_ssl" {}
@@ -67,34 +67,46 @@ variable "windows_image_index" {
   default     = "6"
 }
 
-variable "administrator_password" {
+variable "win_account_builtin_administrator_password" {
   type        = string
   description = "Password for built-in Administrator account"
-  sensitive   = true
+  default     = "REDACTED"
 }
 
-variable "packer_user_password" {
+variable "win_account_packer_username" {
+  type        = string
+  description = "Packer account username"
+  default     = "packer"
+}
+
+variable "win_account_packer_password" {
   type        = string
   description = "Password for packer user account"
-  sensitive   = true
+  default     = "packer"
 }
 
-variable "ansible_user_password" {
+variable "win_account_ansible_password" {
   type        = string
   description = "Password for ansible user account"
-  sensitive   = true
+  default     = "ansible"
 }
 
-variable "unattend_cd_drive" {
+variable "win_iso_unattend_drive" {
   type        = string
   description = "Drive letter for the unattend CD (scripts and config files)"
   default     = "E:"
 }
 
-variable "virtio_cd_drive" {
+variable "win_iso_virtio_drive" {
   type        = string
   description = "Drive letter for the VirtIO drivers CD"
   default     = "F:"
+}
+
+locals {
+  # WinRM connects using the packer account created during installation
+  winrm_username = var.win_account_packer_username
+  winrm_password = var.win_account_packer_password
 }
 
 source "proxmox-iso" "proxmox-vm-windows" {
@@ -118,9 +130,21 @@ source "proxmox-iso" "proxmox-vm-windows" {
 
   additional_iso_files {
     type = "ide"
-    cd_files  = [
-      "${path.root}/files/${var.os_type}-${var.os_version}/AutoUnattend.xml"
-    ]
+    cd_content = {
+      "AutoUnattend.xml" = templatefile(
+        "${path.root}/files/${var.os_type}-${var.os_version}/AutoUnattend.xml.pkrtpl.hcl",
+        {
+          windows_image_index                         = var.windows_image_index
+          win_account_builtin_administrator_password  = var.win_account_builtin_administrator_password
+          win_account_packer_password                 = var.win_account_packer_password
+          win_account_ansible_password                = var.win_account_ansible_password
+          win_iso_unattend_drive                      = var.win_iso_unattend_drive
+          win_iso_virtio_drive                        = var.win_iso_virtio_drive
+        }
+      )
+      "Configure-WinRM.ps1" = file("${path.root}/scripts/${var.os_type}-${var.os_version}/Configure-WinRM.ps1")
+      "Configure-WindowsOptimizations.ps1" = file("${path.root}/scripts/${var.os_type}-${var.os_version}/Configure-WindowsOptimizations.ps1")
+    }
     cd_label = "UNATTEND"
     iso_storage_pool = var.vm_storage_pool
     unmount = true
@@ -167,8 +191,8 @@ source "proxmox-iso" "proxmox-vm-windows" {
   boot_command = var.boot_command
 
   communicator          = var.communicator
-  winrm_username        = var.winrm_username
-  winrm_password        = var.winrm_password
+  winrm_username        = local.winrm_username
+  winrm_password        = local.winrm_password
   winrm_timeout         = var.winrm_timeout
   winrm_port            = var.winrm_port
   winrm_use_ssl         = var.winrm_use_ssl
@@ -184,6 +208,10 @@ build {
   sources = [
     "source.proxmox-iso.proxmox-vm-windows"
   ]
+
+  provisioner "powershell" {
+    script = "${path.root}/scripts/${var.os_type}-${var.os_version}/Install-CloudBase.ps1"
+  }
 
   provisioner "windows-shell" {
     inline = ["shutdown /s /t 5 /f /d p:4:1 /c \"Packer Shutdown\""]

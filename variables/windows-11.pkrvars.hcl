@@ -17,22 +17,10 @@ vm_nic_model      = "e1000"
 boot_wait         = "5s"
 
 communicator          = "winrm"
-winrm_username        = "packer"
-winrm_password        = "packer"
 winrm_timeout         = "1h"
 winrm_port            = "5985"
 winrm_use_ssl         = false
 winrm_insecure        = true
-
-# Windows-specific settings
-windows_image_index    = "6"  # 6 = Windows 11 Pro, 1 = Windows 11 Home
-administrator_password = "REDACTED"
-packer_user_password   = "packer"
-ansible_user_password  = "ansible"
-
-# Drive letter assignments (based on IDE device order in Proxmox)
-unattend_cd_drive = "E:"
-virtio_cd_drive   = "F:"
 
 boot_command = [
   "<enter>"
