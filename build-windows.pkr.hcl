@@ -181,7 +181,7 @@ build {
     scripts = var.provisioning_scripts
   }
 
-  provisioner "windows-shell" {
-    inline = ["shutdown /s /t 5 /f /d p:4:1 /c \"Packer Shutdown\""]
-  }
+  # Note: Shutdown is handled by Sysprep (Run-Sysprep.ps1)
+  # Do NOT add a shutdown provisioner here - Sysprep performs a clean shutdown
+  # after generalizing the Windows installation
 }

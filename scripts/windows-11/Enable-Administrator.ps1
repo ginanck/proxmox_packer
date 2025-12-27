@@ -1,23 +1,42 @@
 # Enable-Administrator.ps1
-# Enable the built-in Administrator account and set password
-# This script is optional - only run if you want Administrator enabled in the template
+# Enable the built-in Administrator account WITHOUT setting a password
+# CloudBase-Init will set the password from Terraform cloud-init metadata at clone time
 
-Write-Host "Enabling built-in Administrator account..."
+$LogFile = "C:\windows-admin-setup.log"
+
+function Write-Log {
+    param([string]$Message)
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] $Message"
+    Write-Host $logMessage -ForegroundColor Green
+    Add-Content -Path $LogFile -Value $logMessage
+}
+
+Write-Log "=== Configuring Built-in Administrator Account ==="
 
 # Enable the Administrator account
+Write-Log "Enabling built-in Administrator account..."
 net user Administrator /active:yes
 
-# Set Administrator password (should match your security requirements)
-# In production, use a strong password or leave it disabled
-$AdminPassword = "P@ssw0rd123!"  # Change this to your desired password
-net user Administrator $AdminPassword
+if ($LASTEXITCODE -eq 0) {
+    Write-Log "Administrator account enabled successfully"
+} else {
+    Write-Log "ERROR: Failed to enable Administrator account"
+}
 
-Write-Host "Administrator account enabled and password set"
+# DO NOT set password here - let CloudBase-Init handle it from Terraform metadata
+# The password will be set via cloud-init user-data when the VM is cloned
+Write-Log "NOTE: Administrator password will be set by CloudBase-Init at clone time"
+Write-Log "NOTE: Use Terraform cloud-init metadata to specify the password"
 
-# Optional: Rename Administrator account for security
-# net user Administrator NewAdminName
+# Ensure Administrator account password never expires (for service accounts)
+Write-Log "Setting password to never expire..."
+net user Administrator /expires:never
+wmic useraccount where "name='Administrator'" set PasswordExpires=FALSE 2>&1 | Out-Null
 
-# Optional: Add Administrator to specific groups (already in Administrators by default)
-# net localgroup "Remote Desktop Users" Administrator /add
+# Add Administrator to Remote Desktop Users for RDP access
+Write-Log "Adding Administrator to Remote Desktop Users group..."
+net localgroup "Remote Desktop Users" Administrator /add 2>&1 | Out-Null
 
-Write-Host "Administrator account configuration complete"
+Write-Log "=== Administrator Account Configuration Complete ==="
+Write-Log "IMPORTANT: Set password via Terraform cloud-init when deploying from this template"
