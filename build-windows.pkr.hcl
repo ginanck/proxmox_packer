@@ -144,6 +144,9 @@ source "proxmox-iso" "proxmox-vm-windows" {
       )
       "Configure-WinRM.ps1" = file("${path.root}/scripts/${var.os_type}-${var.os_version}/Configure-WinRM.ps1")
       "Configure-WindowsOptimizations.ps1" = file("${path.root}/scripts/${var.os_type}-${var.os_version}/Configure-WindowsOptimizations.ps1")
+      # CloudBase-Init configuration files for Terraform integration
+      "cloudbase-init.conf" = file("${path.root}/files/${var.os_type}-${var.os_version}/cloudbase-init.conf")
+      "cloudbase-init-unattend.conf" = file("${path.root}/files/${var.os_type}-${var.os_version}/cloudbase-init-unattend.conf")
     }
     cd_label = "UNATTEND"
     iso_storage_pool = var.vm_storage_pool
