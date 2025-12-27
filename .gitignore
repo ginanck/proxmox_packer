@@ -54,3 +54,5 @@ builds/
 *.iso
 *.iso.backup-*
 packer.log
+
+modules/
