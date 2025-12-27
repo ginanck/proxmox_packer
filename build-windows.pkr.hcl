@@ -44,8 +44,8 @@ variable "template_name" {}
 variable "template_hostname" {}
 
 variable "communicator" {}
-# variable "winrm_username" {}
-# variable "winrm_password" {}
+variable "winrm_username" {}
+variable "winrm_password" {}
 variable "winrm_timeout" {}
 variable "winrm_port" {}
 variable "winrm_use_ssl" {}
@@ -60,53 +60,19 @@ variable "http_port_max" {}
 variable "os_type" {}
 variable "os_version" {}
 
+variable "provisioning_scripts" {
+  type        = list(string)
+  description = "List of scripts to run during provisioning"
+}
+
 # Windows-specific variables
-variable "windows_image_index" {
-  type        = string
-  description = "Windows image index to install (e.g., '6' for Windows 11 Pro)"
-  default     = "6"
-}
-
-variable "win_account_builtin_administrator_password" {
-  type        = string
-  description = "Password for built-in Administrator account"
-  default     = "REDACTED"
-}
-
-variable "win_account_packer_username" {
-  type        = string
-  description = "Packer account username"
-  default     = "packer"
-}
-
-variable "win_account_packer_password" {
-  type        = string
-  description = "Password for packer user account"
-  default     = "packer"
-}
-
-variable "win_account_ansible_password" {
-  type        = string
-  description = "Password for ansible user account"
-  default     = "ansible"
-}
-
-variable "win_iso_unattend_drive" {
-  type        = string
-  description = "Drive letter for the unattend CD (scripts and config files)"
-  default     = "E:"
-}
-
-variable "win_iso_virtio_drive" {
-  type        = string
-  description = "Drive letter for the VirtIO drivers CD"
-  default     = "F:"
-}
+variable "windows_image_index" {}
+variable "win_iso_unattend_drive" {}
+variable "win_iso_virtio_drive" {}
 
 locals {
-  # WinRM connects using the packer account created during installation
-  winrm_username = var.win_account_packer_username
-  winrm_password = var.win_account_packer_password
+  winrm_username = var.winrm_username
+  winrm_password = var.winrm_password
 }
 
 source "proxmox-iso" "proxmox-vm-windows" {
@@ -135,18 +101,17 @@ source "proxmox-iso" "proxmox-vm-windows" {
         "${path.root}/files/${var.os_type}-${var.os_version}/AutoUnattend.xml.pkrtpl.hcl",
         {
           windows_image_index                         = var.windows_image_index
-          win_account_builtin_administrator_password  = var.win_account_builtin_administrator_password
-          win_account_packer_password                 = var.win_account_packer_password
-          win_account_ansible_password                = var.win_account_ansible_password
+          win_account_ansible_username                = var.winrm_username
+          win_account_ansible_password                = var.winrm_password
           win_iso_unattend_drive                      = var.win_iso_unattend_drive
           win_iso_virtio_drive                        = var.win_iso_virtio_drive
         }
       )
-      "Configure-WinRM.ps1" = file("${path.root}/scripts/${var.os_type}-${var.os_version}/Configure-WinRM.ps1")
-      "Configure-WindowsOptimizations.ps1" = file("${path.root}/scripts/${var.os_type}-${var.os_version}/Configure-WindowsOptimizations.ps1")
-      # CloudBase-Init configuration files for Terraform integration
-      "cloudbase-init.conf" = file("${path.root}/files/${var.os_type}-${var.os_version}/cloudbase-init.conf")
-      "cloudbase-init-unattend.conf" = file("${path.root}/files/${var.os_type}-${var.os_version}/cloudbase-init-unattend.conf")
+      "Configure-WinRM.ps1"                 = file("${path.root}/scripts/${var.os_type}-${var.os_version}/Configure-WinRM.ps1")
+      "Configure-WindowsOptimizations.ps1"  = file("${path.root}/scripts/${var.os_type}-${var.os_version}/Configure-WindowsOptimizations.ps1")
+      "Enable-Administrator.ps1"            = file("${path.root}/scripts/${var.os_type}-${var.os_version}/Enable-Administrator.ps1")
+      "cloudbase-init.conf"                 = file("${path.root}/files/${var.os_type}-${var.os_version}/cloudbase-init.conf")
+      "cloudbase-init-unattend.conf"        = file("${path.root}/files/${var.os_type}-${var.os_version}/cloudbase-init-unattend.conf")
     }
     cd_label = "UNATTEND"
     iso_storage_pool = var.vm_storage_pool
@@ -194,8 +159,8 @@ source "proxmox-iso" "proxmox-vm-windows" {
   boot_command = var.boot_command
 
   communicator          = var.communicator
-  winrm_username        = local.winrm_username
-  winrm_password        = local.winrm_password
+  winrm_username        = var.winrm_username
+  winrm_password        = var.winrm_password
   winrm_timeout         = var.winrm_timeout
   winrm_port            = var.winrm_port
   winrm_use_ssl         = var.winrm_use_ssl
@@ -213,7 +178,7 @@ build {
   ]
 
   provisioner "powershell" {
-    script = "${path.root}/scripts/${var.os_type}-${var.os_version}/Install-CloudBase.ps1"
+    scripts = var.provisioning_scripts
   }
 
   provisioner "windows-shell" {

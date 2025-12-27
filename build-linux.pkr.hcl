@@ -1,7 +1,7 @@
 packer {
   required_plugins {
-    name = {
-      version = "1.2.3"
+    proxmox = {
+      version = ">= 1.2.3"
       source  = "github.com/hashicorp/proxmox"
     }
   }
@@ -17,6 +17,7 @@ variable "boot_command" {
 }
 
 variable "vm_cpu_type" {}
+variable "vm_bios" {}
 variable "vm_os" {}
 variable "vm_cpu" {}
 variable "vm_sockets" {}

@@ -17,11 +17,21 @@ vm_nic_model      = "e1000"
 boot_wait         = "5s"
 
 communicator          = "winrm"
+winrm_username        = "ansible"
+winrm_password        = "ansible"
 winrm_timeout         = "1h"
 winrm_port            = "5985"
 winrm_use_ssl         = false
 winrm_insecure        = true
 
+windows_image_index     = "6"
+win_iso_unattend_drive  = "E:"
+win_iso_virtio_drive    = "F:"
+
 boot_command = [
   "<enter>"
+]
+
+provisioning_scripts = [
+  "scripts/windows-11/Install-CloudBase.ps1"
 ]

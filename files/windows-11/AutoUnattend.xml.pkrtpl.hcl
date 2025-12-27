@@ -20,39 +20,25 @@
                 <SkipUserOOBE>true</SkipUserOOBE>
             </OOBE>
             <UserAccounts>
-                <AdministratorPassword>
-                    <Value>${win_account_builtin_administrator_password}</Value>
-                    <PlainText>true</PlainText>
-                </AdministratorPassword>
                 <LocalAccounts>
-                    <LocalAccount wcm:action="add">
-                        <Password>
-                            <Value>${win_account_packer_password}</Value>
-                            <PlainText>true</PlainText>
-                        </Password>
-                        <DisplayName>packer</DisplayName>
-                        <Name>packer</Name>
-                        <Description>packer</Description>
-                        <Group>Administrators</Group>
-                    </LocalAccount>
                     <LocalAccount wcm:action="add">
                         <Password>
                             <Value>${win_account_ansible_password}</Value>
                             <PlainText>true</PlainText>
                         </Password>
-                        <DisplayName>ansible</DisplayName>
+                        <DisplayName>${win_account_ansible_username}</DisplayName>
+                        <Name>${win_account_ansible_username}</Name>
                         <Description>ansible automation</Description>
-                        <Name>ansible</Name>
                         <Group>Administrators</Group>
                     </LocalAccount>
                 </LocalAccounts>
             </UserAccounts>
             <AutoLogon>
                 <Password>
-                    <Value>${win_account_packer_password}</Value>
+                    <Value>${win_account_ansible_password}</Value>
                     <PlainText>true</PlainText>
                 </Password>
-                <Username>packer</Username>
+                <Username>${win_account_ansible_username}</Username>
                 <Enabled>true</Enabled>
                 <LogonCount>2</LogonCount>
             </AutoLogon>
@@ -81,6 +67,12 @@
                     <Order>4</Order>
                     <RequiresUserInput>false</RequiresUserInput>
                     <Description>Configure Windows Optimizations</Description>
+                </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Enable-Administrator.ps1</CommandLine>
+                    <Order>5</Order>
+                    <RequiresUserInput>false</RequiresUserInput>
+                    <Description>Enable Built-in Administrator Account</Description>
                 </SynchronousCommand>
             </FirstLogonCommands>
         </component>
