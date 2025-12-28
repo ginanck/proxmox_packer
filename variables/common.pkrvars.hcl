@@ -22,6 +22,8 @@ vm_nic_bridge      = "vmbr1"
 vm_nic_model       = "virtio"
 vm_nic_firewall    = "false"
 
+vm_virtio_iso_file = "virtio-win-0.1.285.iso"
+
 node_name          = "carbon"
 
 http_bind_address  = "10.50.0.2"

@@ -198,5 +198,5 @@
             <ComputerName>*</ComputerName>
         </component>
     </settings>
-    <cpi:offlineImage cpi:source="wim:c:/win-iso/win11_24h2_english_x64/sources/install.wim#Windows 11 Pro" xmlns:cpi="urn:schemas-microsoft-com:cpi" />
+
 </unattend>

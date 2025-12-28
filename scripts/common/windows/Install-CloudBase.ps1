@@ -1,135 +1,108 @@
-# Install CloudBase-Init and Configure for Terraform Integration
-# This script downloads, installs, and configures Cloudbase-Init
-# for use with Terraform's cloud-init provider in Proxmox environments
+$ErrorActionPreference = "Stop"
 
-$LogFile = "C:\cloudbase-init-setup.log"
-$CloudBaseInstaller = "CloudbaseInitSetup_Stable_x64.msi"
-$CloudBaseUrl = "https://cloudbase.it/downloads/CloudbaseInitSetup_Stable_x64.msi"
-$CloudBaseConfDir = "C:\Program Files\Cloudbase Solutions\Cloudbase-Init\conf"
+$LogFile   = "C:\cloudbase-init-setup.log"
+$MsiLog    = "C:\cloudbase-init-install.log"
+$Installer = "C:\CloudbaseInitSetup_Stable_x64.msi"
+$Url       = "https://cloudbase.it/downloads/CloudbaseInitSetup_Stable_x64.msi"
+
+$InstallDir = "C:\Program Files\Cloudbase Solutions\Cloudbase-Init"
+$ConfDir    = Join-Path $InstallDir "conf"
 
 function Write-Log {
     param([string]$Message)
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] $Message"
-    Write-Host $logMessage -ForegroundColor Green
-    Add-Content -Path $LogFile -Value $logMessage
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $msg = "[$ts] $Message"
+    Write-Host $msg
+    Add-Content -Path $LogFile -Value $msg
 }
 
 function Write-LogError {
     param([string]$Message)
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] ERROR: $Message"
-    Write-Host $logMessage -ForegroundColor Red
-    Add-Content -Path $LogFile -Value $logMessage
+    Write-Log "ERROR: $Message"
+}
+
+function Get-DriveByLabel {
+    param([Parameter(Mandatory=$true)][string]$Label)
+
+    # Works on 2012+ (Get-Volume is available on 2012+)
+    $vol = Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.FileSystemLabel -eq $Label } | Select-Object -First 1
+    if ($vol -and $vol.DriveLetter) { return "$($vol.DriveLetter):\" }
+
+    # Fallback (rare)
+    $wmi = Get-WmiObject Win32_Volume -ErrorAction SilentlyContinue | Where-Object { $_.Label -eq $Label } | Select-Object -First 1
+    if ($wmi -and $wmi.DriveLetter) { return "$($wmi.DriveLetter)\" }
+
+    return $null
+}
+
+# TLS (2012 R2 safe)
+try {
+    [Net.ServicePointManager]::SecurityProtocol =
+        [Net.SecurityProtocolType]::Tls12 -bor
+        [Net.SecurityProtocolType]::Tls11 -bor
+        [Net.SecurityProtocolType]::Tls
+} catch {
+    [Net.ServicePointManager]::SecurityProtocol = 3072
 }
 
 Write-Log "=== Starting Cloudbase-Init Installation ==="
 
 try {
-    # Download Cloudbase-Init
-    Write-Log "Downloading Cloudbase-Init from $CloudBaseUrl"
-    Invoke-WebRequest -Uri $CloudBaseUrl -OutFile $CloudBaseInstaller -UseBasicParsing
+    # Ensure Windows Installer service is up
+    Write-Log "Ensuring Windows Installer service is running"
+    Start-Service msiserver -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 10
 
-    if (-not (Test-Path $CloudBaseInstaller)) {
-        Write-LogError "Failed to download Cloudbase-Init installer"
-        exit 1
-    }
-    Write-Log "Download completed: $CloudBaseInstaller"
+    # Download
+    Write-Log "Downloading Cloudbase-Init from $Url"
+    Invoke-WebRequest -Uri $Url -OutFile $Installer -UseBasicParsing
+    if (-not (Test-Path $Installer)) { throw "Cloudbase-Init installer download failed" }
 
-    # Install Cloudbase-Init
+    # Pre-create dirs (prevents some MSI edge failures)
+    New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+    New-Item -ItemType Directory -Path $ConfDir -Force | Out-Null
+
+    # Install: use /qb! not /qn (important for MSI custom actions)
     Write-Log "Installing Cloudbase-Init..."
-    $installArgs = @(
-        "/i",
-        $CloudBaseInstaller,
-        "/qb-",           # Quiet with basic UI
-        "/norestart",     # Don't restart automatically
-        "/l*v",           # Verbose logging
-        "C:\cloudbase-init-install.log"
+    $args = @(
+        "/i", "`"$Installer`"",
+        "/qb!",
+        "REBOOT=ReallySuppress",
+        "RUN_SERVICE=0",
+        "/l*v", "`"$MsiLog`""
     )
 
-    $cloudbase = Start-Process msiexec.exe -ArgumentList $installArgs -NoNewWindow -Wait -PassThru
-
-    if ($cloudbase.ExitCode -ne 0) {
-        Write-LogError "Cloudbase-Init installation failed with exit code: $($cloudbase.ExitCode)"
-        Write-LogError "Check installation log: C:\cloudbase-init-install.log"
-        exit 1
-    }
-    Write-Log "Cloudbase-Init installed successfully"
-
-    # Wait for installation to complete and files to be available
-    Start-Sleep -Seconds 5
-
-    # Verify installation directory exists
-    if (-not (Test-Path $CloudBaseConfDir)) {
-        Write-LogError "Cloudbase-Init configuration directory not found: $CloudBaseConfDir"
-        exit 1
+    $proc = Start-Process msiexec.exe -ArgumentList $args -Wait -PassThru
+    if ($proc.ExitCode -ne 0) {
+        throw "Installer failed with exit code $($proc.ExitCode). See $MsiLog"
     }
 
-    # Copy configuration files from Packer CD to Cloudbase-Init directory
-    # These files should be in the root of the Packer-generated CD (same location as this script)
-    $configFiles = @(
-        @{
-            Source = "E:\cloudbase-init.conf"
-            Dest = "$CloudBaseConfDir\cloudbase-init.conf"
-            Description = "Main configuration file"
-        },
-        @{
-            Source = "E:\cloudbase-init-unattend.conf"
-            Dest = "$CloudBaseConfDir\cloudbase-init-unattend.conf"
-            Description = "Unattend configuration file"
-        }
-    )
+    Start-Sleep -Seconds 10
 
-    foreach ($config in $configFiles) {
-        if (Test-Path $config.Source) {
-            Write-Log "Copying $($config.Description): $($config.Source) -> $($config.Dest)"
-            Copy-Item -Path $config.Source -Destination $config.Dest -Force -ErrorAction Stop
-            Write-Log "Successfully copied $($config.Description)"
-        } else {
-            Write-LogError "Configuration file not found: $($config.Source)"
-            Write-LogError "Cloudbase-Init will use default configuration"
-        }
-    }
+    # Find your attached ISO by label, not by letter
+    $unattendDrive = Get-DriveByLabel -Label "UNATTEND"
+    if (-not $unattendDrive) { throw "Could not find UNATTEND ISO by volume label" }
 
-    # Verify configuration files are in place
-    $mainConfig = "$CloudBaseConfDir\cloudbase-init.conf"
-    $unattendConfig = "$CloudBaseConfDir\cloudbase-init-unattend.conf"
+    # Copy configs from ISO content
+    $srcConf  = Join-Path $unattendDrive "cloudbase-init.conf"
+    $srcUnatt = Join-Path $unattendDrive "cloudbase-init-unattend.conf"
 
-    if (Test-Path $mainConfig) {
-        Write-Log "Main configuration verified: $mainConfig"
-    } else {
-        Write-LogError "Main configuration not found after copy attempt"
-    }
+    if (Test-Path $srcConf)  { Copy-Item $srcConf  (Join-Path $ConfDir "cloudbase-init.conf") -Force; Write-Log "Copied cloudbase-init.conf" }
+    if (Test-Path $srcUnatt) { Copy-Item $srcUnatt (Join-Path $ConfDir "cloudbase-init-unattend.conf") -Force; Write-Log "Copied cloudbase-init-unattend.conf" }
 
-    if (Test-Path $unattendConfig) {
-        Write-Log "Unattend configuration verified: $unattendConfig"
-    } else {
-        Write-LogError "Unattend configuration not found after copy attempt"
-    }
+    # Enable + start service after configs are in place
+    Write-Log "Starting Cloudbase-Init service"
+    Set-Service cloudbase-init -StartupType Automatic
+    Start-Service cloudbase-init
 
-    # Verify Cloudbase-Init service exists
-    $service = Get-Service -Name "cloudbase-init" -ErrorAction SilentlyContinue
-    if ($service) {
-        Write-Log "Cloudbase-Init service status: $($service.Status)"
-        Write-Log "Cloudbase-Init service startup type: $($service.StartType)"
-    } else {
-        Write-LogError "Cloudbase-Init service not found"
-    }
+    $svc = Get-Service cloudbase-init -ErrorAction SilentlyContinue
+    if (-not $svc) { throw "Cloudbase-Init service not found after install" }
 
-    # Clean up installer
-    if (Test-Path $CloudBaseInstaller) {
-        Remove-Item $CloudBaseInstaller -Force
-        Write-Log "Cleaned up installer file"
-    }
-
-    Write-Log "=== Cloudbase-Init Installation and Configuration Completed ==="
-    Write-Log "Next steps:"
-    Write-Log "1. Cloudbase-Init will run automatically on next boot"
-    Write-Log "2. Check logs: C:\Program Files\Cloudbase Solutions\Cloudbase-Init\log\"
-    Write-Log "3. Terraform can now use cloud-init for this template"
+    Remove-Item $Installer -Force -ErrorAction SilentlyContinue
+    Write-Log "=== Cloudbase-Init installation completed successfully ==="
 }
 catch {
-    Write-LogError "Exception during Cloudbase-Init installation: $($_.Exception.Message)"
-    Write-LogError "Stack trace: $($_.Exception.StackTrace)"
+    Write-LogError $_.Exception.Message
+    if (Test-Path $MsiLog) { Write-LogError "MSI log: $MsiLog" }
     exit 1
 }

@@ -33,6 +33,7 @@ variable "vm_nic_bridge" {}
 variable "vm_nic_model" {}
 variable "vm_nic_firewall" {}
 variable "vm_iso_file" {}
+variable "vm_virtio_iso_file" {}
 variable "vm_id" {}
 
 variable boot_wait {}
@@ -120,7 +121,7 @@ source "proxmox-iso" "proxmox-vm-windows" {
 
   additional_iso_files {
     type = "sata"
-    iso_file = "${var.vm_storage_pool}:iso/virtio-win-0.1.285.iso"
+    iso_file = "${var.vm_storage_pool}:iso/${var.vm_virtio_iso_file}"
     unmount = true
   }
 
@@ -178,7 +179,12 @@ build {
   ]
 
   provisioner "powershell" {
-    scripts = var.provisioning_scripts
+    scripts          = var.provisioning_scripts
+    execution_policy = "Bypass"
+    pause_before     = "30s"
+
+    elevated_user     = var.winrm_username
+    elevated_password = var.winrm_password
   }
 
   # Note: Shutdown is handled by Sysprep (Run-Sysprep.ps1)

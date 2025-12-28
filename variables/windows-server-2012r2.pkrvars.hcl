@@ -1,3 +1,5 @@
+vm_virtio_iso_file = "virtio-win-0.1.204.iso"
+
 vm_iso_file = "Windows_Server_2012R2_Eval.iso"
 vm_id       = "7951"
 
@@ -33,9 +35,10 @@ boot_command = [
 ]
 
 provisioning_scripts = [
-  "scripts/common/windows/Install-CloudBase.ps1",
-  "scripts/common/windows/Install-Chocolatey.ps1",
-  "scripts/common/windows/Install-Python.ps1",
-  "scripts/common/windows/Enable-Security.ps1",
   "scripts/common/windows/Run-Sysprep.ps1"
 ]
+
+  # "scripts/common/windows/Enable-Security.ps1",
+  # "scripts/common/windows/Install-Python.ps1",
+  # "scripts/common/windows/Install-Chocolatey.ps1",
+  # "scripts/common/windows/Install-CloudBase.ps1",

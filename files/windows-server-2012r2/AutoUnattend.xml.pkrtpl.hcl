@@ -42,32 +42,32 @@
             <TimeZone>FLE Standard Time</TimeZone>
             <FirstLogonCommands>
                 <SynchronousCommand wcm:action="add">
-                    <Order>1</Order>
+                    <Order>2</Order>
                     <Description>Install VirtIO Guest Tools</Description>
                     <RequiresUserInput>false</RequiresUserInput>
-                    <CommandLine>cmd.exe /c ${win_iso_virtio_drive}\virtio-win-guest-tools.exe /S /norestart</CommandLine>
+                    <CommandLine>cmd.exe /c ${win_iso_virtio_drive}\guest-agent\qemu-ga-x86_64.msi /quiet /norestart</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <Order>2</Order>
+                    <Order>3</Order>
                     <Description>Start QEMU Guest Agent</Description>
                     <RequiresUserInput>false</RequiresUserInput>
                     <CommandLine>powershell -Command &quot;Start-Service -Name &apos;QEMU-GA&apos;&quot;</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
                     <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-WinRM.ps1</CommandLine>
-                    <Order>3</Order>
+                    <Order>4</Order>
                     <RequiresUserInput>false</RequiresUserInput>
                     <Description>Configure WinRM for Remote Access</Description>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
                     <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Disable-Security.ps1</CommandLine>
-                    <Order>4</Order>
+                    <Order>5</Order>
                     <RequiresUserInput>false</RequiresUserInput>
                     <Description>Disable Security Features for Packer Build</Description>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
                     <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-Administrator.ps1</CommandLine>
-                    <Order>5</Order>
+                    <Order>6</Order>
                     <RequiresUserInput>false</RequiresUserInput>
                     <Description>Configure Built-in Administrator Account</Description>
                 </SynchronousCommand>
@@ -81,6 +81,27 @@
             <SystemLocale>en-US</SystemLocale>
             <UILanguage>en-US</UILanguage>
         </component>
+
+        <component
+            name="Microsoft-Windows-PnpCustomizationsWinPE"
+            processorArchitecture="amd64"
+            publicKeyToken="31bf3856ad364e35"
+            language="neutral"
+            versionScope="nonSxS"
+            xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+            <DriverPaths>
+                <PathAndCredentials wcm:action="add">
+                    <Path>${win_iso_virtio_drive}\vioserial\2k12R2\amd64</Path>
+                </PathAndCredentials>
+
+                <PathAndCredentials wcm:action="add">
+                    <Path>${win_iso_virtio_drive}\vioscsi\2k12R2\amd64</Path>
+                </PathAndCredentials>
+            </DriverPaths>
+        </component>
+
         <component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <DiskConfiguration>
                 <Disk wcm:action="add">
@@ -99,16 +120,9 @@
                             <Type>MSR</Type>
                         </CreatePartition>
 
-                        <!-- Recovery (WinRE) -->
-                        <CreatePartition wcm:action="add">
-                            <Order>3</Order>
-                            <Size>750</Size>
-                            <Type>Primary</Type>
-                        </CreatePartition>
-
                         <!-- Windows (LAST, extendable) -->
                         <CreatePartition wcm:action="add">
-                            <Order>4</Order>
+                            <Order>3</Order>
                             <Extend>true</Extend>
                             <Type>Primary</Type>
                         </CreatePartition>
@@ -122,20 +136,11 @@
                             <Format>FAT32</Format>
                         </ModifyPartition>
 
-                        <!-- Recovery -->
-                        <ModifyPartition wcm:action="add">
-                            <Order>2</Order>
-                            <PartitionID>3</PartitionID>
-                            <Label>Recovery</Label>
-                            <Format>NTFS</Format>
-                            <TypeID>DE94BBA4-06D1-4D40-A16A-BFD50179D6AC</TypeID>
-                        </ModifyPartition>
-
                         <!-- Windows -->
                         <ModifyPartition wcm:action="add">
-                            <Order>3</Order>
+                            <Order>2</Order>
                             <Format>NTFS</Format>
-                            <PartitionID>4</PartitionID>
+                            <PartitionID>3</PartitionID>
                             <Label>Windows</Label>
                         </ModifyPartition>
                     </ModifyPartitions>
@@ -148,7 +153,7 @@
                 <OSImage>
                     <InstallTo>
                         <DiskID>0</DiskID>
-                        <PartitionID>4</PartitionID>
+                        <PartitionID>3</PartitionID>
                     </InstallTo>
                     <WillShowUI>OnError</WillShowUI>
                     <InstallToAvailablePartition>false</InstallToAvailablePartition>
@@ -161,10 +166,6 @@
                 </OSImage>
             </ImageInstall>
             <UserData>
-                <ProductKey>
-                    <WillShowUI>Never</WillShowUI>
-                    <Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>
-                </ProductKey>
                 <AcceptEula>true</AcceptEula>
             </UserData>
             <RunSynchronous>
@@ -175,14 +176,21 @@
                 </RunSynchronousCommand>
             </RunSynchronous>
         </component>
+
     </settings>
     <settings pass="specialize">
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <ComputerName>*</ComputerName>
         </component>
     </settings>
-    <cpi:offlineImage
-        cpi:source="wim:c:/win-iso/win10_22h2_english_x64/sources/install.wim#Windows 10 Pro"
-        xmlns:cpi="urn:schemas-microsoft-com:cpi" />
 
 </unattend>
+
+<!-- EFI
+Make sure your ISO includes SHA-2 updates:
+
+KB4474419
+KB4490628
+
+Without them, VirtIO drivers may silently fail.
+-->

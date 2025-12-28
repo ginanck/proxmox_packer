@@ -181,8 +181,5 @@
             <ComputerName>*</ComputerName>
         </component>
     </settings>
-    <cpi:offlineImage
-        cpi:source="wim:c:/win-iso/win10_22h2_english_x64/sources/install.wim#Windows 10 Pro"
-        xmlns:cpi="urn:schemas-microsoft-com:cpi" />
 
 </unattend>

@@ -10,9 +10,12 @@
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <OOBE>
                 <HideEULAPage>true</HideEULAPage>
+                <HideLocalAccountScreen>true</HideLocalAccountScreen>
                 <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
                 <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
                 <ProtectYourPC>3</ProtectYourPC>
+                <UnattendEnableRetailDemo>false</UnattendEnableRetailDemo>
                 <SkipMachineOOBE>true</SkipMachineOOBE>
                 <SkipUserOOBE>true</SkipUserOOBE>
             </OOBE>
@@ -163,14 +166,28 @@
             <UserData>
                 <ProductKey>
                     <WillShowUI>Never</WillShowUI>
-                    <Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>
                 </ProductKey>
                 <AcceptEula>true</AcceptEula>
             </UserData>
             <RunSynchronous>
                 <RunSynchronousCommand wcm:action="add">
-                    <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f</Path>
+                    <Path>cmd /c reg add HKLM\SYSTEM\Setup\LabConfig /v BypassTPMCheck /t REG_DWORD /d 1 /f</Path>
                     <Order>1</Order>
+                    <Description>Bypass TPM Check</Description>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Path>cmd /c reg add HKLM\SYSTEM\Setup\LabConfig /v BypassRAMCheck /t REG_DWORD /d 1 /f</Path>
+                    <Order>2</Order>
+                    <Description>Bypass RAM Check</Description>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Path>cmd /c reg add HKLM\SYSTEM\Setup\LabConfig /v BypassSecureBootCheck /t REG_DWORD /d 1 /f</Path>
+                    <Order>3</Order>
+                    <Description>Bypass Secure Boot Check</Description>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_DWORD /d 1 /f</Path>
+                    <Order>4</Order>
                     <Description>Disable Windows Defender</Description>
                 </RunSynchronousCommand>
             </RunSynchronous>
@@ -181,8 +198,5 @@
             <ComputerName>*</ComputerName>
         </component>
     </settings>
-    <cpi:offlineImage
-        cpi:source="wim:c:/win-iso/win10_22h2_english_x64/sources/install.wim#Windows 10 Pro"
-        xmlns:cpi="urn:schemas-microsoft-com:cpi" />
 
 </unattend>
