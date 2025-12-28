@@ -110,8 +110,8 @@ source "proxmox-iso" "proxmox-vm-windows" {
       "Configure-WinRM.ps1"           = file("${path.root}/scripts/common/windows/Configure-WinRM.ps1")
       "Disable-Security.ps1"          = file("${path.root}/scripts/common/windows/Disable-Security.ps1")
       "Configure-Administrator.ps1"   = file("${path.root}/scripts/common/windows/Configure-Administrator.ps1")
-      "cloudbase-init.conf"           = file("${path.root}/files/${var.os_type}-${var.os_version}/cloudbase-init.conf")
-      "cloudbase-init-unattend.conf"  = file("${path.root}/files/${var.os_type}-${var.os_version}/cloudbase-init-unattend.conf")
+      "cloudbase-init.conf"           = file("${path.root}/files/windows/cloudbase-init.conf")
+      "cloudbase-init-unattend.conf"  = file("${path.root}/files/windows/cloudbase-init-unattend.conf")
     }
     cd_label = "UNATTEND"
     iso_storage_pool = var.vm_storage_pool

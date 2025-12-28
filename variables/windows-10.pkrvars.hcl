@@ -1,13 +1,13 @@
-vm_iso_file = "Win11_24H2_English_x64.iso"
-vm_id       = "8201"
+vm_iso_file = "Win10_22H2_English_x64v1.iso"
+vm_id       = "8202"
 
-template_name     = "windows-11-template"
-template_hostname = "windows-11"
+template_name     = "windows-10-template"
+template_hostname = "windows-10"
 
 vm_disk_size      = "40G"
 
 vm_bios           = "ovmf"
-vm_os             = "win11"
+vm_os             = "win10"
 vm_cpu            = "2"
 vm_sockets        = "1"
 vm_ram            = "4096"
