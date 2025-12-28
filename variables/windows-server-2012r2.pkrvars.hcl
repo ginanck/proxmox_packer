@@ -1,13 +1,13 @@
-vm_iso_file = "Win10_22H2_English_x64v1.iso"
-vm_id       = "7902"
+vm_iso_file = "Windows_Server_2012R2_Eval.iso"
+vm_id       = "7951"
 
-template_name     = "windows-10-template"
-template_hostname = "windows-10"
+template_name     = "windows-server-2012r2-template"
+template_hostname = "windows-server-2012r2"
 
 vm_disk_size      = "40G"
 
 vm_bios           = "ovmf"
-vm_os             = "win10"
+vm_os             = "win8"
 vm_cpu            = "2"
 vm_sockets        = "1"
 vm_ram            = "4096"
@@ -24,7 +24,7 @@ winrm_port            = "5985"
 winrm_use_ssl         = false
 winrm_insecure        = true
 
-windows_image_index     = "6"
+windows_image_index     = "2"
 win_iso_unattend_drive  = "E:"
 win_iso_virtio_drive    = "F:"
 

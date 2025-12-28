@@ -1,5 +1,5 @@
 vm_iso_file = "Win11_24H2_English_x64.iso"
-vm_id       = "8201"
+vm_id       = "7903"
 
 template_name     = "windows-11-template"
 template_hostname = "windows-11"
