@@ -33,7 +33,11 @@ boot_command = [
 ]
 
 provisioning_scripts = [
-  "scripts/windows-11/Install-CloudBase.ps1",
-  "scripts/windows-11/Restore-SecuritySettings.ps1",
-  "scripts/windows-11/Run-Sysprep.ps1"
+  "scripts/common/windows/Install-CloudBase.ps1",
+  "scripts/common/windows/Install-Chocolatey.ps1",
+  "scripts/common/windows/Install-Python.ps1",
+  "scripts/common/windows/Enable-Security.ps1",
+  "scripts/common/windows/Run-Sysprep.ps1"
 ]
+
+  # "scripts/windows-11/Install-OpenSSH.ps1",

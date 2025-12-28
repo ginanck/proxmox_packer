@@ -1,5 +1,14 @@
-# Configure-WindowsOptimizations.ps1
-# Applies Windows optimizations for Packer template building
+# Disable-SecurityForBuild.ps1
+# Disables security features during Packer build for faster provisioning
+# These settings are restored by Enable-SecurityAfterBuild.ps1 before Sysprep
+#
+# Disabled during build:
+# - UAC (User Access Control) - allows unattended installs
+# - Windows Update - prevents updates during build
+#
+# Enabled during build:
+# - RDP (Remote Desktop) - for remote access
+# - High Performance power plan - prevents sleep during build
 
 $LogFile = "C:\windows-optimization.log"
 

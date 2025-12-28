@@ -1,6 +1,11 @@
-# Restore-SecuritySettings.ps1
-# Re-enables Windows Defender and UAC before template finalization
-# These were disabled during build for faster provisioning
+# Enable-SecurityAfterBuild.ps1
+# Re-enables security features before Sysprep/template finalization
+# Counterpart to Disable-SecurityForBuild.ps1
+#
+# Restored after build:
+# - UAC (User Access Control)
+# - Windows Defender (removed DisableAntiSpyware policy)
+# - Windows Update (removed NoAutoUpdate policy)
 
 $LogFile = "C:\windows-security-restore.log"
 

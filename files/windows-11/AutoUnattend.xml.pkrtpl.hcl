@@ -63,16 +63,16 @@
                     <Description>Configure WinRM for Remote Access</Description>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-WindowsOptimizations.ps1</CommandLine>
+                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Disable-Security.ps1</CommandLine>
                     <Order>4</Order>
                     <RequiresUserInput>false</RequiresUserInput>
-                    <Description>Configure Windows Optimizations</Description>
+                    <Description>Disable Security Features for Packer Build</Description>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Enable-Administrator.ps1</CommandLine>
+                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-Administrator.ps1</CommandLine>
                     <Order>5</Order>
                     <RequiresUserInput>false</RequiresUserInput>
-                    <Description>Enable Built-in Administrator Account</Description>
+                    <Description>Configure Built-in Administrator Account</Description>
                 </SynchronousCommand>
             </FirstLogonCommands>
         </component>
@@ -88,33 +88,57 @@
             <DiskConfiguration>
                 <Disk wcm:action="add">
                     <CreatePartitions>
-                        <CreatePartition wcm:action="add">
-                            <Order>3</Order>
-                            <Extend>true</Extend>
-                            <Type>Primary</Type>
-                        </CreatePartition>
+                        <!-- EFI -->
                         <CreatePartition wcm:action="add">
                             <Size>100</Size>
                             <Type>EFI</Type>
                             <Order>1</Order>
                         </CreatePartition>
+
+                        <!-- MSR -->
                         <CreatePartition wcm:action="add">
                             <Order>2</Order>
                             <Size>16</Size>
                             <Type>MSR</Type>
                         </CreatePartition>
+
+                        <!-- Recovery (WinRE) -->
+                        <CreatePartition wcm:action="add">
+                            <Order>3</Order>
+                            <Size>750</Size>
+                            <Type>Primary</Type>
+                        </CreatePartition>
+
+                        <!-- Windows (LAST, extendable) -->
+                        <CreatePartition wcm:action="add">
+                            <Order>4</Order>
+                            <Extend>true</Extend>
+                            <Type>Primary</Type>
+                        </CreatePartition>
                     </CreatePartitions>
                     <ModifyPartitions>
+                        <!-- EFI -->
                         <ModifyPartition wcm:action="add">
                             <Order>1</Order>
                             <PartitionID>1</PartitionID>
                             <Label>System</Label>
                             <Format>FAT32</Format>
                         </ModifyPartition>
+
+                        <!-- Recovery -->
                         <ModifyPartition wcm:action="add">
                             <Order>2</Order>
-                            <Format>NTFS</Format>
                             <PartitionID>3</PartitionID>
+                            <Label>Recovery</Label>
+                            <Format>NTFS</Format>
+                            <TypeID>DE94BBA4-06D1-4D40-A16A-BFD50179D6AC</TypeID>
+                        </ModifyPartition>
+
+                        <!-- Windows -->
+                        <ModifyPartition wcm:action="add">
+                            <Order>3</Order>
+                            <Format>NTFS</Format>
+                            <PartitionID>4</PartitionID>
                             <Label>Windows</Label>
                         </ModifyPartition>
                     </ModifyPartitions>
@@ -127,7 +151,7 @@
                 <OSImage>
                     <InstallTo>
                         <DiskID>0</DiskID>
-                        <PartitionID>3</PartitionID>
+                        <PartitionID>4</PartitionID>
                     </InstallTo>
                     <WillShowUI>OnError</WillShowUI>
                     <InstallToAvailablePartition>false</InstallToAvailablePartition>

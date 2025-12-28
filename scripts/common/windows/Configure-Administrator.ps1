@@ -1,6 +1,12 @@
-# Enable-Administrator.ps1
-# Enable the built-in Administrator account WITHOUT setting a password
+# Configure-Administrator.ps1
+# Configures the built-in Administrator account for cloud-init integration
 # CloudBase-Init will set the password from Terraform cloud-init metadata at clone time
+#
+# Configuration:
+# - Enables Administrator account
+# - Sets password to never expire
+# - Adds to Remote Desktop Users group
+# - Does NOT set password (handled by CloudBase-Init)
 
 $LogFile = "C:\windows-admin-setup.log"
 
