@@ -17,25 +17,17 @@
                 <SkipUserOOBE>true</SkipUserOOBE>
             </OOBE>
             <UserAccounts>
-                <LocalAccounts>
-                    <LocalAccount wcm:action="add">
-                        <Password>
-                            <Value>${win_account_ansible_password}</Value>
-                            <PlainText>true</PlainText>
-                        </Password>
-                        <DisplayName>${win_account_ansible_username}</DisplayName>
-                        <Name>${win_account_ansible_username}</Name>
-                        <Description>ansible automation</Description>
-                        <Group>Administrators</Group>
-                    </LocalAccount>
-                </LocalAccounts>
+                <AdministratorPassword>
+                    <Value>${win_administrator_password}</Value>
+                    <PlainText>true</PlainText>
+                </AdministratorPassword>
             </UserAccounts>
             <AutoLogon>
                 <Password>
-                    <Value>${win_account_ansible_password}</Value>
+                    <Value>${win_administrator_password}</Value>
                     <PlainText>true</PlainText>
                 </Password>
-                <Username>${win_account_ansible_username}</Username>
+                <Username>Administrator</Username>
                 <Enabled>true</Enabled>
                 <LogonCount>2</LogonCount>
             </AutoLogon>
@@ -54,22 +46,10 @@
                     <CommandLine>powershell -Command &quot;Start-Service -Name &apos;QEMU-GA&apos;&quot;</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-WinRM.ps1</CommandLine>
+                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Setup-WinRM.ps1</CommandLine>
                     <Order>3</Order>
                     <RequiresUserInput>false</RequiresUserInput>
                     <Description>Configure WinRM for Remote Access</Description>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Disable-Security.ps1</CommandLine>
-                    <Order>4</Order>
-                    <RequiresUserInput>false</RequiresUserInput>
-                    <Description>Disable Security Features for Packer Build</Description>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-Administrator.ps1</CommandLine>
-                    <Order>5</Order>
-                    <RequiresUserInput>false</RequiresUserInput>
-                    <Description>Configure Built-in Administrator Account</Description>
                 </SynchronousCommand>
             </FirstLogonCommands>
         </component>

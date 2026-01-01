@@ -59,18 +59,6 @@
                     <RequiresUserInput>false</RequiresUserInput>
                     <Description>Configure WinRM for Remote Access</Description>
                 </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Disable-Security.ps1</CommandLine>
-                    <Order>5</Order>
-                    <RequiresUserInput>false</RequiresUserInput>
-                    <Description>Disable Security Features for Packer Build</Description>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-Administrator.ps1</CommandLine>
-                    <Order>6</Order>
-                    <RequiresUserInput>false</RequiresUserInput>
-                    <Description>Configure Built-in Administrator Account</Description>
-                </SynchronousCommand>
             </FirstLogonCommands>
         </component>
     </settings>

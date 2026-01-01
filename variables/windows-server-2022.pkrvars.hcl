@@ -1,4 +1,4 @@
-vm_iso_file = "Windows_Server_2022_Eval.iso"
+vm_iso_file = "Win2022_SERVER_EVAL_x64FRE_en-us.iso"
 vm_id       = "7954"
 
 template_name     = "windows-server-2022-template"
@@ -35,7 +35,6 @@ boot_command = [
 provisioning_scripts = [
   "scripts/common/windows/Install-CloudBase.ps1",
   "scripts/common/windows/Install-Chocolatey.ps1",
-  "scripts/common/windows/Install-Python.ps1",
-  "scripts/common/windows/Enable-Security.ps1",
+  "scripts/windows/setup/Manage-Security.ps1 -Action Enable",
   "scripts/common/windows/Run-Sysprep.ps1"
 ]

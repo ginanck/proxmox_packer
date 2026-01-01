@@ -1,5 +1,5 @@
-vm_iso_file = "Win11_24H2_English_x64.iso"
-vm_id       = "7903"
+vm_iso_file = "Win11_25H2_English_x64.iso"
+vm_id       = "7902"
 
 template_name     = "windows-11-template"
 template_hostname = "windows-11"
@@ -35,7 +35,6 @@ boot_command = [
 provisioning_scripts = [
   "scripts/common/windows/Install-CloudBase.ps1",
   "scripts/common/windows/Install-Chocolatey.ps1",
-  "scripts/common/windows/Install-Python.ps1",
-  "scripts/common/windows/Enable-Security.ps1",
+  "scripts/windows/setup/Manage-Security.ps1 -Action Enable",
   "scripts/common/windows/Run-Sysprep.ps1"
 ]

@@ -40,9 +40,5 @@ Write-Log "Setting password to never expire..."
 net user Administrator /expires:never
 wmic useraccount where "name='Administrator'" set PasswordExpires=FALSE 2>&1 | Out-Null
 
-# Add Administrator to Remote Desktop Users for RDP access
-Write-Log "Adding Administrator to Remote Desktop Users group..."
-net localgroup "Remote Desktop Users" Administrator /add 2>&1 | Out-Null
-
 Write-Log "=== Administrator Account Configuration Complete ==="
 Write-Log "IMPORTANT: Set password via Terraform cloud-init when deploying from this template"

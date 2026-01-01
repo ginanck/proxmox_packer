@@ -61,20 +61,10 @@ variable "http_port_max" {}
 variable "os_type" {}
 variable "os_version" {}
 
-variable "provisioning_scripts" {
-  type        = list(string)
-  description = "List of scripts to run during provisioning"
-}
-
 # Windows-specific variables
 variable "windows_image_index" {}
 variable "win_iso_unattend_drive" {}
 variable "win_iso_virtio_drive" {}
-
-locals {
-  winrm_username = var.winrm_username
-  winrm_password = var.winrm_password
-}
 
 source "proxmox-iso" "proxmox-vm-windows" {
   proxmox_url = var.proxmox_url
@@ -101,18 +91,16 @@ source "proxmox-iso" "proxmox-vm-windows" {
       "AutoUnattend.xml" = templatefile(
         "${path.root}/files/${var.os_type}-${var.os_version}/AutoUnattend.xml.pkrtpl.hcl",
         {
-          windows_image_index                         = var.windows_image_index
-          win_account_ansible_username                = var.winrm_username
-          win_account_ansible_password                = var.winrm_password
-          win_iso_unattend_drive                      = var.win_iso_unattend_drive
-          win_iso_virtio_drive                        = var.win_iso_virtio_drive
+          windows_image_index            = var.windows_image_index
+          win_administrator_password     = var.winrm_password
+          win_iso_unattend_drive         = var.win_iso_unattend_drive
+          win_iso_virtio_drive           = var.win_iso_virtio_drive
         }
       )
-      "Configure-WinRM.ps1"           = file("${path.root}/scripts/common/windows/Configure-WinRM.ps1")
-      "Disable-Security.ps1"          = file("${path.root}/scripts/common/windows/Disable-Security.ps1")
-      "Configure-Administrator.ps1"   = file("${path.root}/scripts/common/windows/Configure-Administrator.ps1")
-      "cloudbase-init.conf"           = file("${path.root}/files/windows/cloudbase-init.conf")
-      "cloudbase-init-unattend.conf"  = file("${path.root}/files/windows/cloudbase-init-unattend.conf")
+      "Setup-WinRM.ps1"               = file("${path.root}/scripts/windows/build/Setup-WinRM.ps1")
+      "Build-ManageSecurity.ps1"      = file("${path.root}/scripts/windows/build/Build-ManageSecurity.ps1")
+      "cloudbase-init.conf"           = file("${path.root}/files/common/windows/cloudbase-init.conf")
+      "cloudbase-init-unattend.conf"  = file("${path.root}/files/common/windows/cloudbase-init-unattend.conf")
     }
     cd_label = "UNATTEND"
     iso_storage_pool = var.vm_storage_pool
@@ -178,16 +166,52 @@ build {
     "source.proxmox-iso.proxmox-vm-windows"
   ]
 
+  # Phase 1: Prepare build environment (disable security, configure admin, enable RDP)
   provisioner "powershell" {
-    scripts          = var.provisioning_scripts
+    scripts = [
+      "${path.root}/scripts/windows/build/Build-ManageSecurity.ps1",
+      "${path.root}/scripts/windows/build/Setup-EnableAdministrator.ps1",
+      "${path.root}/scripts/windows/build/Setup-EnableRDP.ps1"
+    ]
+    environment_vars = [
+      "SECURITY_ACTION=Disable"
+    ]
     execution_policy = "Bypass"
-    pause_before     = "30s"
-
-    elevated_user     = var.winrm_username
-    elevated_password = var.winrm_password
+    pause_before     = "15s"
   }
 
-  # Note: Shutdown is handled by Sysprep (Run-Sysprep.ps1)
-  # Do NOT add a shutdown provisioner here - Sysprep performs a clean shutdown
-  # after generalizing the Windows installation
+  # Phase 2: Install required software (Cloudbase-Init creates directories)
+  provisioner "powershell" {
+    scripts = [
+      "${path.root}/scripts/windows/build/Build-InstallCloudbase.ps1",
+      "${path.root}/scripts/windows/build/Build-InstallChocolatey.ps1"
+    ]
+    execution_policy = "Bypass"
+    pause_before     = "15s"
+  }
+
+  # Phase 3: Deploy runtime and first-boot scripts (after Cloudbase-Init is installed)
+  provisioner "file" {
+    source      = "${path.root}/scripts/windows/terraform-callable/"
+    destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\pc2_scripts\\"
+  }
+
+  provisioner "file" {
+    source      = "${path.root}/scripts/windows/build/CloudInit-DiskManagement.ps1"
+    destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\LocalScripts\\CloudInit-DiskManagement.ps1"
+  }
+
+  # Phase 4: Finalize and generalize template (re-enable security, run sysprep)
+  provisioner "powershell" {
+    scripts = [
+      "${path.root}/scripts/windows/build/Build-ManageSecurity.ps1",
+      "${path.root}/scripts/windows/build/Build-RunSysprep.ps1"
+    ]
+    environment_vars = [
+      "SECURITY_ACTION=Enable"
+    ]
+    execution_policy = "Bypass"
+    pause_before     = "15s"
+  }
+
 }
