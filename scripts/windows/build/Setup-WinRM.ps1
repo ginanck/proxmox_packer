@@ -28,7 +28,39 @@ function Write-LogError {
 
 Write-Log "=== Starting WinRM Configuration ==="
 
+# ============================================================
+# Wait for QEMU Guest Agent to be running
+# ============================================================
+Write-Log "Checking for QEMU Guest Agent..."
+$maxAttempts = 60
+$attempt = 0
+$qemuRunning = $false
+
+do {
+    $qemuSvc = Get-Service -Name 'QEMU-GA' -ErrorAction SilentlyContinue
+    if ($qemuSvc) {
+        if ($qemuSvc.Status -eq 'Running') {
+            Write-Log "QEMU Guest Agent is running"
+            $qemuRunning = $true
+            break
+        } else {
+            Write-Log "QEMU-GA found but not running (Status: $($qemuSvc.Status)), attempting to start..."
+            Start-Service -Name 'QEMU-GA' -ErrorAction SilentlyContinue
+        }
+    } else {
+        Write-Log "QEMU-GA service not found yet... attempt $attempt of $maxAttempts"
+    }
+    $attempt++
+    Start-Sleep -Seconds 2
+} while ($attempt -lt $maxAttempts)
+
+if (-not $qemuRunning) {
+    Write-LogError "QEMU Guest Agent not running after $maxAttempts attempts, continuing anyway..."
+}
+
+# ============================================================
 # Wait for network adapter to be ready
+# ============================================================
 Write-Log "Waiting for network adapter..."
 $maxAttempts = 30
 $attempt = 0

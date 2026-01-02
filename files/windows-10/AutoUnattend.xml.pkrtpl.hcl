@@ -37,16 +37,10 @@
                     <Order>1</Order>
                     <Description>Install VirtIO Guest Tools</Description>
                     <RequiresUserInput>false</RequiresUserInput>
-                    <CommandLine>cmd.exe /c &quot;FOR %i IN (C D E F G H I J K L M N O P Q R S T U V W X Y Z) DO @IF EXIST %i:\virtio-win-guest-tools.exe (start /wait %i:\virtio-win-guest-tools.exe /S /norestart)&quot;</CommandLine>
+                    <CommandLine>cmd.exe /c &quot;FOR %i IN (C D E F G H I J K L M N O P Q R S T U V W X Y Z) DO @IF EXIST %i:\Setup-VirtIO.ps1 (powershell -ExecutionPolicy Bypass -File %i:\Setup-VirtIO.ps1)&quot;</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
                     <Order>2</Order>
-                    <Description>Start QEMU Guest Agent</Description>
-                    <RequiresUserInput>false</RequiresUserInput>
-                    <CommandLine>powershell -Command &quot;Start-Service -Name &apos;QEMU-GA&apos;&quot;</CommandLine>
-                </SynchronousCommand>
-                <SynchronousCommand wcm:action="add">
-                    <Order>3</Order>
                     <RequiresUserInput>false</RequiresUserInput>
                     <Description>Configure WinRM for Remote Access</Description>
                     <CommandLine>cmd.exe /c &quot;FOR %i IN (C D E F G H I J K L M N O P Q R S T U V W X Y Z) DO @IF EXIST %i:\Setup-WinRM.ps1 (powershell -ExecutionPolicy Bypass -File %i:\Setup-WinRM.ps1)&quot;</CommandLine>

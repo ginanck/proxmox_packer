@@ -93,6 +93,7 @@ source "proxmox-iso" "proxmox-vm-windows" {
           win_administrator_password     = var.winrm_password
         }
       )
+      "Setup-VirtIO.ps1"              = file("${path.root}/scripts/windows/build/Setup-VirtIO.ps1")
       "Setup-WinRM.ps1"               = file("${path.root}/scripts/windows/build/Setup-WinRM.ps1")
       "Build-ManageSecurity.ps1"      = file("${path.root}/scripts/windows/build/Build-ManageSecurity.ps1")
       "cloudbase-init.conf"           = file("${path.root}/files/common/windows/cloudbase-init.conf")
