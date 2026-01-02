@@ -1,10 +1,11 @@
 # ============================================================================
-# Install-Chocolatey.ps1
-# Works on Windows Desktop and Windows Server
+# Build-InstallChocolatey.ps1 (simplified)
+# This minimal installer sets $env:chocolateyVersion according to a compatibility
+# matrix and then executes the official one-liner to install Chocolatey.
 # ============================================================================
 
-# Don't use Stop - we want to handle errors gracefully
-$ErrorActionPreference = 'Continue'
+# Fail fast on unexpected errors
+$ErrorActionPreference = 'Stop'
 
 # Setup logging
 $LogDir = "C:\Packer"
@@ -31,115 +32,67 @@ function Write-LogError {
     Add-Content -Path $LogFile -Value $logMessage
 }
 
-Write-Log "=== Installing Chocolatey ==="
+Write-Output "=== Installing Chocolatey (minimal) ==="
 
-# Check if already installed
+# If already installed, exit successfully
 if (Get-Command choco -ErrorAction SilentlyContinue) {
-    Write-Log "Chocolatey already installed: $(choco --version)"
+    Write-Output "Chocolatey already installed: $(choco --version)"
     exit 0
 }
 
-# Ensure TLS 1.2 (important for older Windows / Server)
-Write-Log "Configuring TLS 1.2..."
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# Determine OS caption and PowerShell version
+$psMajor = $PSVersionTable.PSVersion.Major
 
-# Test internet connectivity first
-Write-Log "Testing internet connectivity..."
-$testUrls = @(
-    'https://community.chocolatey.org',
-    'https://chocolatey.org',
-    'https://www.google.com'
-)
-$hasInternet = $false
-foreach ($url in $testUrls) {
-    try {
-        $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
-        if ($response.StatusCode -eq 200) {
-            Write-Log "Internet connectivity confirmed via $url"
-            $hasInternet = $true
-            break
-        }
-    } catch {
-        Write-Log "Cannot reach $url - trying next..."
+if ($psMajor -lt 5) {
+    $os = Get-WmiObject Win32_OperatingSystem
+} else {
+    $os = Get-CimInstance Win32_OperatingSystem
+}
+$caption = $os.Caption
+
+# Compatibility matrix -> set specific Chocolatey version
+switch -Wildcard ($caption) {
+    '*2012 R2*' { $env:chocolateyVersion = '0.10.15'; break }
+    '*2016*'    { $env:chocolateyVersion = '1.4.0'; break }
+    '*2019*'    { $env:chocolateyVersion = '2.6.0'; break }
+    '*2022*'    { $env:chocolateyVersion = '2.6.0'; break }
+    '*Windows 10*' { $env:chocolateyVersion = '2.6.0'; break }
+    '*Windows 11*' { $env:chocolateyVersion = '2.6.0'; break }
+    default {
+        $env:chocolateyVersion = '2.6.0'; Write-Warning "Unknown OS '$caption' - defaulting Chocolatey version to $env:chocolateyVersion"
     }
 }
 
-if (-not $hasInternet) {
-    Write-LogError "No internet connectivity - skipping Chocolatey installation"
-    Write-Log "Chocolatey can be installed manually after deployment"
-    exit 0  # Exit gracefully, don't fail the build
+Write-Output "Detected OS: $caption"
+Write-Output "PowerShell version: $($PSVersionTable.PSVersion.ToString())"
+Write-Output "Using Chocolatey version: $env:chocolateyVersion"
+
+# Build installer command
+if ($psMajor -ge 6) {
+    $installerCmd = 'Set-ExecutionPolicy Bypass -Scope Process -Force; iwr https://community.chocolatey.org/install.ps1 | iex'
+} else {
+    $installerCmd = 'Set-ExecutionPolicy Bypass -Scope Process -Force; iwr https://community.chocolatey.org/install.ps1 -UseBasicParsing | iex'
 }
 
 try {
-    Write-Log "Downloading Chocolatey install script..."
-    $installScript = (New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')
+    Write-Output "Running official Chocolatey installer..."
+    [Net.ServicePointManager]::SecurityProtocol = `
+        [Net.SecurityProtocolType]::Tls12 `
+        -bor [Net.SecurityProtocolType]::Tls11 `
+        -bor [Net.SecurityProtocolType]::Tls
 
-    function Wait-ForNetwork {
-        param(
-            [int]$TimeoutSec = 600,
-            [int]$IntervalSec = 10
-        )
-        $elapsed = 0
-        while ($elapsed -lt $TimeoutSec) {
-            try {
-                $req = Invoke-WebRequest -Uri 'https://community.chocolatey.org' -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
-                if ($req.StatusCode -eq 200) { return $true }
-            } catch {}
-            Start-Sleep -Seconds $IntervalSec
-            $elapsed += $IntervalSec
-        }
-        return $false
-    }
-
-    if ($Resume) {
-        Write-Log "Resume mode: waiting for network connectivity..."
-        if (-not (Wait-ForNetwork -TimeoutSec 600 -IntervalSec 10)) {
-            Write-LogError "Network did not become available within timeout on resume; aborting Chocolatey install"
-            exit 1
-        }
-        try { [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072 } catch {}
-    }
-
-    Write-Log "Executing Chocolatey installer..."
-    Invoke-Expression $installScript
-
-    # After running the install script, check if a reboot is required
-    $rebootPending = $false
-    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") { $rebootPending = $true }
-    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") { $rebootPending = $true }
-    $sess = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -ErrorAction SilentlyContinue
-    if ($sess -and $sess.PendingFileRenameOperations) { $rebootPending = $true }
-
-    if ($rebootPending -and -not $Resume) {
-        Write-Log "Reboot required after Chocolatey install. Forcing restart now; the resume provisioner will run when WinRM reconnects."
-        try {
-            Restart-Computer -Force
-            exit 0
-        } catch {
-            Write-LogError ("Failed to restart computer: {0}" -f $_.Exception.Message)
-            exit 1
-        }
-    } elseif ($rebootPending -and $Resume) {
-        Write-LogError "Reboot still required after resume - aborting"
-        exit 1
-    }
-}
-catch {
-    Write-LogError "Chocolatey installation failed: $_"
-    Write-Log "Continuing without Chocolatey - it can be installed Chocolatey-Resume stage later"
-    exit 0  # Exit gracefully, don't fail the build
+    $env:chocolateyUseWindowsCompression = 'true' # Recommended for 2012 R2
+    Invoke-Expression $installerCmd
+} catch {
+    Write-Output "Chocolatey installer failed: $_"
+    exit 1
 }
 
-# Refresh PATH
-$env:Path = [System.Environment]::GetEnvironmentVariable(
-    'Path', [System.EnvironmentVariableTarget]::Machine
-)
-
-# Verify
+# Verify installation
 if (Get-Command choco -ErrorAction SilentlyContinue) {
-    Write-Log "Chocolatey installed successfully: $(choco --version)"
+    Write-Output "Chocolatey installed: $(choco --version)"
+    exit 0
 } else {
-    Write-LogError "Chocolatey installation verification failed - continuing anyway"
+    Write-Output "Chocolatey not detected after installer"
+    exit 1
 }
-
-Write-Log "=== Chocolatey Installation Complete ==="

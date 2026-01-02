@@ -185,20 +185,11 @@ build {
     execution_policy = "Bypass"
   }
 
-  # If Chocolatey required a reboot, resume install after the reboot in a
-  # separate provisioner so Packer can reconnect cleanly.
-  provisioner "powershell" {
-    scripts = [
-      "${path.root}/scripts/windows/build/Build-InstallChocolatey.ps1"
-    ]
-    execution_policy = "Bypass"
-    pause_before = "60s"
-  }
-
   # Phase 3: Deploy runtime and first-boot scripts (after Cloudbase-Init is installed)
   provisioner "file" {
     source      = "${path.root}/scripts/windows/terraform-callable/"
     destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\pc2_scripts\\"
+    pause_before = "30s"
   }
 
   # LocalScripts run in alphabetical order - 01 runs before 02
