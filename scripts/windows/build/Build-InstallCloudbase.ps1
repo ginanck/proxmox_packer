@@ -58,45 +58,43 @@ try {
 }
 
 # Choose MSI based on OS: 2012 R2 -> 1.1.2 (max), 2016 -> 1.1.4, others -> latest
-try {
-    $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
-    if (-not $os) { $os = Get-WmiObject Win32_OperatingSystem -ErrorAction SilentlyContinue }
-    $caption = $os.Caption
+$psMajor = $PSVersionTable.PSVersion.Major
 
-    switch -Wildcard ($caption) {
-        '*2012 R2*' {
-            $cloudbaseVersion = '1.1.2'
-            $Installer = "C:\CloudbaseInitSetup_1_1_2_x64.msi"
-            $Url = "https://github.com/cloudbase/cloudbase-init/releases/download/1.1.2/CloudbaseInitSetup_1_1_2_x64.msi"
-            Write-Log "Detected Windows Server 2012 R2 - using Cloudbase-Init $cloudbaseVersion (max supported)"
-            break
-        }
-        '*2016*' {
-            $cloudbaseVersion = '1.1.4'
-            $Installer = "C:\CloudbaseInitSetup_1_1_4_x64.msi"
-            $Url = "https://github.com/cloudbase/cloudbase-init/releases/download/1.1.4/CloudbaseInitSetup_1_1_4_x64.msi"
-            Write-Log "Detected Windows Server 2016 - using Cloudbase-Init $cloudbaseVersion"
-            break
-        }
-        default {
-            $cloudbaseVersion = '1.1.6'
-            $Installer = "C:\CloudbaseInitSetup_1_1_6_x64.msi"
-            $Url = "https://github.com/cloudbase/cloudbase-init/releases/download/1.1.6/CloudbaseInitSetup_1_1_6_x64.msi"
-            Write-Log "Unknown OS '$caption' - defaulting to Cloudbase-Init $cloudbaseVersion"
-            break
-        }
+if ($psMajor -lt 5) {
+    $os = Get-WmiObject Win32_OperatingSystem
+} else {
+    $os = Get-CimInstance Win32_OperatingSystem
+}
+$caption = $os.Caption
+
+switch -Wildcard ($caption) {
+    '*2012 R2*' {
+        $cloudbaseVersion = '1.1.2'
+        $Installer = "C:\CloudbaseInitSetup_1_1_2_x64.msi"
+        $Url = "https://github.com/cloudbase/cloudbase-init/releases/download/1.1.2/CloudbaseInitSetup_1_1_2_x64.msi"
+        Write-Log "Detected Windows Server 2012 R2 - using Cloudbase-Init $cloudbaseVersion (max supported)"
+        break
     }
+    '*2016*' {
+        $cloudbaseVersion = '1.1.4'
+        $Installer = "C:\CloudbaseInitSetup_1_1_4_x64.msi"
+        $Url = "https://github.com/cloudbase/cloudbase-init/releases/download/1.1.4/CloudbaseInitSetup_1_1_4_x64.msi"
+        Write-Log "Detected Windows Server 2016 - using Cloudbase-Init $cloudbaseVersion"
+        break
+    }
+    default {
+        $cloudbaseVersion = '1.1.6'
+        $Installer = "C:\CloudbaseInitSetup_1_1_6_x64.msi"
+        $Url = "https://github.com/cloudbase/cloudbase-init/releases/download/1.1.6/CloudbaseInitSetup_1_1_6_x64.msi"
+        Write-Log "Detected OS '$caption' - defaulting to Cloudbase-Init $cloudbaseVersion"
+        break
+    }
+}
+$env:cloudbaseInitVersion = $cloudbaseVersion
 
-    # Export chosen version (useful for later stages)
-    $env:cloudbaseInitVersion = $cloudbaseVersion
-}
-catch {
-    # Default to latest if OS detection fails
-    $Installer = "C:\CloudbaseInitSetup_Stable_x64.msi"
-    $Url = "https://github.com/cloudbase/cloudbase-init/releases/download/1.1.6/CloudbaseInitSetup_1_1_6_x64.msi"
-    $env:cloudbaseInitVersion = '1.1.6'
-    Write-Log "OS detection failed; defaulting to Cloudbase-Init $env:cloudbaseInitVersion"
-}
+Write-Output "Detected OS: $caption"
+Write-Output "PowerShell version: $($PSVersionTable.PSVersion.ToString())"
+Write-Output "Using CloudBase-Init version: $env:cloudbaseInitVersion"
 
 Write-Log "=== Starting Cloudbase-Init Installation ==="
 
