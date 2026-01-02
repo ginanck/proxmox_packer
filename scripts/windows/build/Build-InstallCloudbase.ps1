@@ -101,10 +101,19 @@ try {
     if (Test-Path $srcConf)  { Copy-Item $srcConf  (Join-Path $ConfDir "cloudbase-init.conf") -Force; Write-Log "Copied cloudbase-init.conf" }
     if (Test-Path $srcUnatt) { Copy-Item $srcUnatt (Join-Path $ConfDir "cloudbase-init-unattend.conf") -Force; Write-Log "Copied cloudbase-init-unattend.conf" }
 
-    # Enable + start service after configs are in place
-    Write-Log "Starting Cloudbase-Init service"
+    # Configure service to start on first boot after sysprep (NOT during build)
+    Write-Log "Configuring Cloudbase-Init service for immediate automatic startup"
     Set-Service cloudbase-init -StartupType Automatic
-    Start-Service cloudbase-init
+
+    # Ensure it's NOT delayed start - remove DelayedAutostart flag if present
+    $regPath = "HKLM:\SYSTEM\CurrentControlSet\Services\cloudbase-init"
+    if (Test-Path $regPath) {
+        Remove-ItemProperty -Path $regPath -Name "DelayedAutostart" -ErrorAction SilentlyContinue
+        Write-Log "Ensured cloudbase-init is set to Automatic (immediate, not delayed)"
+    }
+
+    # Do NOT start the service now - it will run after sysprep on first boot
+    Write-Log "NOTE: Cloudbase-Init service will start automatically on first boot after sysprep"
 
     $svc = Get-Service cloudbase-init -ErrorAction SilentlyContinue
     if (-not $svc) { throw "Cloudbase-Init service not found after install" }

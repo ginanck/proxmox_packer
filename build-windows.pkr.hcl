@@ -95,7 +95,6 @@ source "proxmox-iso" "proxmox-vm-windows" {
       )
       "Setup-VirtIO.ps1"              = file("${path.root}/scripts/windows/build/Setup-VirtIO.ps1")
       "Setup-WinRM.ps1"               = file("${path.root}/scripts/windows/build/Setup-WinRM.ps1")
-      "Build-ManageSecurity.ps1"      = file("${path.root}/scripts/windows/build/Build-ManageSecurity.ps1")
       "cloudbase-init.conf"           = file("${path.root}/files/common/windows/cloudbase-init.conf")
       "cloudbase-init-unattend.conf"  = file("${path.root}/files/common/windows/cloudbase-init-unattend.conf")
     }
@@ -189,7 +188,6 @@ build {
   provisioner "file" {
     source      = "${path.root}/scripts/windows/terraform-callable/"
     destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\pc2_scripts\\"
-    pause_before = "15s"
   }
 
   provisioner "file" {

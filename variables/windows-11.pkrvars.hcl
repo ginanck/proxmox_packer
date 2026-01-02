@@ -17,24 +17,15 @@ vm_nic_model      = "e1000"
 boot_wait         = "5s"
 
 communicator          = "winrm"
-winrm_username        = "ansible"
-winrm_password        = "ansible"
+winrm_username        = "Administrator"
+winrm_password        = "REDACTED"
 winrm_timeout         = "1h"
 winrm_port            = "5985"
 winrm_use_ssl         = false
 winrm_insecure        = true
 
 windows_image_index     = "6"
-win_iso_unattend_drive  = "E:"
-win_iso_virtio_drive    = "F:"
 
 boot_command = [
   "<enter>"
-]
-
-provisioning_scripts = [
-  "scripts/common/windows/Install-CloudBase.ps1",
-  "scripts/common/windows/Install-Chocolatey.ps1",
-  "scripts/windows/setup/Manage-Security.ps1 -Action Enable",
-  "scripts/common/windows/Run-Sysprep.ps1"
 ]

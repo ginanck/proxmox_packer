@@ -155,8 +155,19 @@ if (-not $qemuService) {
 }
 
 # ============================================================
-# Start QEMU Guest Agent
+# Configure and Start QEMU Guest Agent
 # ============================================================
+Write-Log "Configuring QEMU Guest Agent for immediate automatic startup..."
+
+# Set service to Automatic (immediate, not delayed)
+Set-Service -Name 'QEMU-GA' -StartupType Automatic -ErrorAction SilentlyContinue
+# Ensure it's NOT delayed start - remove DelayedAutostart flag if present
+$regPath = "HKLM:\SYSTEM\CurrentControlSet\Services\QEMU-GA"
+if (Test-Path $regPath) {
+    Remove-ItemProperty -Path $regPath -Name "DelayedAutostart" -ErrorAction SilentlyContinue
+    Write-Log "Ensured QEMU-GA is set to Automatic (immediate, not delayed)"
+}
+
 Write-Log "Starting QEMU Guest Agent..."
 
 try {
