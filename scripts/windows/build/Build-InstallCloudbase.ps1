@@ -1,24 +1,35 @@
 $ErrorActionPreference = "Stop"
 
-$LogFile   = "C:\cloudbase-init-setup.log"
-$MsiLog    = "C:\cloudbase-init-install.log"
+# Setup logging
+$LogDir = "C:\Packer"
+$Timestamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
+$LogFile = Join-Path $LogDir "Build-InstallCloudbase-$Timestamp.log"
+
+$MsiLog = Join-Path $LogDir "Build-InstallCloudbase-MSI-$Timestamp.log"
 $Installer = "C:\CloudbaseInitSetup_Stable_x64.msi"
-$Url       = "https://cloudbase.it/downloads/CloudbaseInitSetup_Stable_x64.msi"
+$Url = "https://cloudbase.it/downloads/CloudbaseInitSetup_Stable_x64.msi"
 
 $InstallDir = "C:\Program Files\Cloudbase Solutions\Cloudbase-Init"
-$ConfDir    = Join-Path $InstallDir "conf"
+$ConfDir = Join-Path $InstallDir "conf"
+
+if (-not (Test-Path $LogDir)) {
+    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+}
 
 function Write-Log {
     param([string]$Message)
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $msg = "[$ts] $Message"
-    Write-Host $msg
-    Add-Content -Path $LogFile -Value $msg
+    $logMessage = "[$ts] $Message"
+    Write-Host $logMessage -ForegroundColor Green
+    Add-Content -Path $LogFile -Value $logMessage
 }
 
 function Write-LogError {
     param([string]$Message)
-    Write-Log "ERROR: $Message"
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$ts] ERROR: $Message"
+    Write-Host $logMessage -ForegroundColor Red
+    Add-Content -Path $LogFile -Value $logMessage
 }
 
 function Get-DriveByLabel {

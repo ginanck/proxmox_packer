@@ -20,25 +20,17 @@
                 <SkipUserOOBE>true</SkipUserOOBE>
             </OOBE>
             <UserAccounts>
-                <LocalAccounts>
-                    <LocalAccount wcm:action="add">
-                        <Password>
-                            <Value>${win_account_ansible_password}</Value>
-                            <PlainText>true</PlainText>
-                        </Password>
-                        <DisplayName>${win_account_ansible_username}</DisplayName>
-                        <Name>${win_account_ansible_username}</Name>
-                        <Description>ansible automation</Description>
-                        <Group>Administrators</Group>
-                    </LocalAccount>
-                </LocalAccounts>
+                <AdministratorPassword>
+                    <Value>${win_administrator_password}</Value>
+                    <PlainText>true</PlainText>
+                </AdministratorPassword>
             </UserAccounts>
             <AutoLogon>
                 <Password>
-                    <Value>${win_account_ansible_password}</Value>
+                    <Value>${win_administrator_password}</Value>
                     <PlainText>true</PlainText>
                 </Password>
-                <Username>${win_account_ansible_username}</Username>
+                <Username>Administrator</Username>
                 <Enabled>true</Enabled>
                 <LogonCount>2</LogonCount>
             </AutoLogon>
@@ -48,7 +40,7 @@
                     <Order>1</Order>
                     <Description>Install VirtIO Guest Tools</Description>
                     <RequiresUserInput>false</RequiresUserInput>
-                    <CommandLine>cmd.exe /c ${win_iso_virtio_drive}\virtio-win-guest-tools.exe /S /norestart</CommandLine>
+                    <CommandLine>cmd.exe /c &quot;FOR %i IN (C D E F G H I J K L M N O P Q R S T U V W X Y Z) DO @IF EXIST %i:\virtio-win-guest-tools.exe (start /wait %i:\virtio-win-guest-tools.exe /S /norestart)&quot;</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
                     <Order>2</Order>
@@ -57,10 +49,10 @@
                     <CommandLine>powershell -Command &quot;Start-Service -Name &apos;QEMU-GA&apos;&quot;</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-WinRM.ps1</CommandLine>
                     <Order>3</Order>
                     <RequiresUserInput>false</RequiresUserInput>
                     <Description>Configure WinRM for Remote Access</Description>
+                    <CommandLine>cmd.exe /c "FOR %i IN (C D E F G H I J K L M N O P Q R S T U V W X Y Z) DO @IF EXIST %i:\Setup-WinRM.ps1 (powershell -ExecutionPolicy Bypass -File %i:\Setup-WinRM.ps1)"</CommandLine>
                 </SynchronousCommand>
             </FirstLogonCommands>
         </component>

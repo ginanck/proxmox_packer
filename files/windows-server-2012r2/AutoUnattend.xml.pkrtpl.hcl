@@ -17,47 +17,39 @@
                 <SkipUserOOBE>true</SkipUserOOBE>
             </OOBE>
             <UserAccounts>
-                <LocalAccounts>
-                    <LocalAccount wcm:action="add">
-                        <Password>
-                            <Value>${win_account_ansible_password}</Value>
-                            <PlainText>true</PlainText>
-                        </Password>
-                        <DisplayName>${win_account_ansible_username}</DisplayName>
-                        <Name>${win_account_ansible_username}</Name>
-                        <Description>ansible automation</Description>
-                        <Group>Administrators</Group>
-                    </LocalAccount>
-                </LocalAccounts>
+                <AdministratorPassword>
+                    <Value>${win_administrator_password}</Value>
+                    <PlainText>true</PlainText>
+                </AdministratorPassword>
             </UserAccounts>
             <AutoLogon>
                 <Password>
-                    <Value>${win_account_ansible_password}</Value>
+                    <Value>${win_administrator_password}</Value>
                     <PlainText>true</PlainText>
                 </Password>
-                <Username>${win_account_ansible_username}</Username>
+                <Username>Administrator</Username>
                 <Enabled>true</Enabled>
                 <LogonCount>2</LogonCount>
             </AutoLogon>
             <TimeZone>FLE Standard Time</TimeZone>
             <FirstLogonCommands>
                 <SynchronousCommand wcm:action="add">
-                    <Order>2</Order>
-                    <Description>Install VirtIO Guest Tools</Description>
+                    <Order>1</Order>
+                    <Description>Install QEMU Guest Agent</Description>
                     <RequiresUserInput>false</RequiresUserInput>
-                    <CommandLine>cmd.exe /c ${win_iso_virtio_drive}\guest-agent\qemu-ga-x86_64.msi /quiet /norestart</CommandLine>
+                    <CommandLine>cmd.exe /c &quot;FOR %i IN (C D E F G H I J K L M N O P Q R S T U V W X Y Z) DO @IF EXIST %i:\guest-agent\qemu-ga-x86_64.msi (start /wait msiexec /i %i:\guest-agent\qemu-ga-x86_64.msi /quiet /norestart)&quot;</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <Order>3</Order>
+                    <Order>2</Order>
                     <Description>Start QEMU Guest Agent</Description>
                     <RequiresUserInput>false</RequiresUserInput>
                     <CommandLine>powershell -Command &quot;Start-Service -Name &apos;QEMU-GA&apos;&quot;</CommandLine>
                 </SynchronousCommand>
                 <SynchronousCommand wcm:action="add">
-                    <CommandLine>powershell.exe -ExecutionPolicy Bypass -File ${win_iso_unattend_drive}\Configure-WinRM.ps1</CommandLine>
-                    <Order>4</Order>
+                    <Order>3</Order>
                     <RequiresUserInput>false</RequiresUserInput>
                     <Description>Configure WinRM for Remote Access</Description>
+                    <CommandLine>cmd.exe /c "FOR %i IN (C D E F G H I J K L M N O P Q R S T U V W X Y Z) DO @IF EXIST %i:\Setup-WinRM.ps1 (powershell -ExecutionPolicy Bypass -File %i:\Setup-WinRM.ps1)"</CommandLine>
                 </SynchronousCommand>
             </FirstLogonCommands>
         </component>

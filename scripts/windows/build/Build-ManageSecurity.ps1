@@ -32,20 +32,27 @@ if (-not $Action) {
     exit 1
 }
 
-$LogFile = "C:\windows-security-management.log"
+# Setup logging
+$LogDir = "C:\Packer"
+$Timestamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
+$LogFile = Join-Path $LogDir "Build-ManageSecurity-$Timestamp.log"
+
+if (-not (Test-Path $LogDir)) {
+    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+}
 
 function Write-Log {
     param([string]$Message)
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] $Message"
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$ts] $Message"
     Write-Host $logMessage -ForegroundColor Green
     Add-Content -Path $LogFile -Value $logMessage
 }
 
 function Write-LogError {
     param([string]$Message)
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] ERROR: $Message"
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$ts] ERROR: $Message"
     Write-Host $logMessage -ForegroundColor Red
     Add-Content -Path $LogFile -Value $logMessage
 }

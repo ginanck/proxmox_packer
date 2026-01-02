@@ -63,8 +63,6 @@ variable "os_version" {}
 
 # Windows-specific variables
 variable "windows_image_index" {}
-variable "win_iso_unattend_drive" {}
-variable "win_iso_virtio_drive" {}
 
 source "proxmox-iso" "proxmox-vm-windows" {
   proxmox_url = var.proxmox_url
@@ -93,8 +91,6 @@ source "proxmox-iso" "proxmox-vm-windows" {
         {
           windows_image_index            = var.windows_image_index
           win_administrator_password     = var.winrm_password
-          win_iso_unattend_drive         = var.win_iso_unattend_drive
-          win_iso_virtio_drive           = var.win_iso_virtio_drive
         }
       )
       "Setup-WinRM.ps1"               = file("${path.root}/scripts/windows/build/Setup-WinRM.ps1")
@@ -177,7 +173,6 @@ build {
       "SECURITY_ACTION=Disable"
     ]
     execution_policy = "Bypass"
-    pause_before     = "15s"
   }
 
   # Phase 2: Install required software (Cloudbase-Init creates directories)
@@ -187,13 +182,13 @@ build {
       "${path.root}/scripts/windows/build/Build-InstallChocolatey.ps1"
     ]
     execution_policy = "Bypass"
-    pause_before     = "15s"
   }
 
   # Phase 3: Deploy runtime and first-boot scripts (after Cloudbase-Init is installed)
   provisioner "file" {
     source      = "${path.root}/scripts/windows/terraform-callable/"
     destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\pc2_scripts\\"
+    pause_before = "15s"
   }
 
   provisioner "file" {
@@ -211,7 +206,6 @@ build {
       "SECURITY_ACTION=Enable"
     ]
     execution_policy = "Bypass"
-    pause_before     = "15s"
   }
 
 }

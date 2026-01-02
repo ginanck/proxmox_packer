@@ -4,12 +4,37 @@
 
 $ErrorActionPreference = "Continue"
 
-Write-Host "=== Auto-Initializing Additional Disks ==="
+# Setup logging
+$LogDir = "C:\Packer"
+$Timestamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
+$LogFile = Join-Path $LogDir "CloudInit-DiskManagement-$Timestamp.log"
+
+if (-not (Test-Path $LogDir)) {
+    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+}
+
+function Write-Log {
+    param([string]$Message)
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$ts] $Message"
+    Write-Host $logMessage -ForegroundColor Green
+    Add-Content -Path $LogFile -Value $logMessage
+}
+
+function Write-LogError {
+    param([string]$Message)
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$ts] ERROR: $Message"
+    Write-Host $logMessage -ForegroundColor Red
+    Add-Content -Path $LogFile -Value $logMessage
+}
+
+Write-Log "=== Auto-Initializing Additional Disks ==="
 
 # Get all offline disks
 $offlineDisks = Get-Disk | Where-Object { $_.OperationalStatus -eq 'Offline' }
 foreach ($disk in $offlineDisks) {
-    Write-Host "Bringing disk $($disk.Number) online..."
+    Write-Log "Bringing disk $($disk.Number) online..."
     Set-Disk -Number $disk.Number -IsOffline $false
 }
 
@@ -17,7 +42,7 @@ foreach ($disk in $offlineDisks) {
 $rawDisks = Get-Disk | Where-Object { $_.PartitionStyle -eq 'RAW' }
 
 if ($rawDisks.Count -eq 0) {
-    Write-Host "No uninitialized disks found. Checking for extension..."
+    Write-Log "No uninitialized disks found. Checking for extension..."
 
     # Extend existing volumes that have unallocated space
     $volumes = Get-Volume | Where-Object { $_.DriveLetter -ne $null }
@@ -29,9 +54,9 @@ if ($rawDisks.Count -eq 0) {
 
             if ($partition.Size -lt $maxSize) {
                 $sizeDiffGB = [math]::Round(($maxSize - $partition.Size) / 1GB, 2)
-                Write-Host "Extending $($volume.DriveLetter): by $sizeDiffGB GB..."
+                Write-Log "Extending $($volume.DriveLetter): by $sizeDiffGB GB..."
                 Resize-Partition -DiskNumber $partition.DiskNumber -PartitionNumber $partition.PartitionNumber -Size $maxSize
-                Write-Host "Volume $($volume.DriveLetter): extended successfully"
+                Write-Log "Volume $($volume.DriveLetter): extended successfully"
             }
         }
     }
@@ -39,7 +64,7 @@ if ($rawDisks.Count -eq 0) {
     exit 0
 }
 
-Write-Host "Found $($rawDisks.Count) uninitialized disk(s)"
+Write-Log "Found $($rawDisks.Count) uninitialized disk(s)"
 
 # Available drive letters (skip A, B, C, D which are typically reserved)
 $usedLetters = (Get-Volume | Where-Object { $_.DriveLetter -ne $null }).DriveLetter
@@ -49,7 +74,7 @@ $letterIndex = 0
 
 foreach ($disk in $rawDisks) {
     try {
-        Write-Host "Initializing disk $($disk.Number) (Size: $([math]::Round($disk.Size / 1GB, 2)) GB)..."
+        Write-Log "Initializing disk $($disk.Number) (Size: $([math]::Round($disk.Size / 1GB, 2)) GB)..."
 
         # Initialize as GPT
         Initialize-Disk -Number $disk.Number -PartitionStyle GPT -ErrorAction Stop
@@ -61,26 +86,26 @@ foreach ($disk in $rawDisks) {
         if ($letterIndex -lt $availableLetters.Count) {
             $driveLetter = $availableLetters[$letterIndex]
             $partition | Set-Partition -NewDriveLetter $driveLetter -ErrorAction Stop
-            Write-Host "Assigned drive letter: ${driveLetter}:"
+            Write-Log "Assigned drive letter: ${driveLetter}:"
         } else {
-            Write-Host "No available drive letters, disk will not have a letter"
+            Write-Log "No available drive letters, disk will not have a letter"
         }
 
         # Format as NTFS
         $volume = $partition | Format-Volume -FileSystem NTFS -NewFileSystemLabel "Data$($disk.Number)" -Confirm:$false -ErrorAction Stop
 
-        Write-Host "Disk $($disk.Number) initialized and formatted successfully"
+        Write-Log "Disk $($disk.Number) initialized and formatted successfully"
         $letterIndex++
 
     } catch {
-        Write-Host "ERROR: Failed to initialize disk $($disk.Number): $_" -ForegroundColor Red
+        Write-LogError "Failed to initialize disk $($disk.Number): $_"
     }
 }
 
-Write-Host "=== Disk Initialization Complete ==="
+Write-Log "=== Disk Initialization Complete ==="
 
 # Extend existing volumes if they have unallocated space
-Write-Host "Checking for volumes that can be extended..."
+Write-Log "Checking for volumes that can be extended..."
 $volumes = Get-Volume | Where-Object { $_.DriveLetter -ne $null -and $_.FileSystem -eq 'NTFS' }
 foreach ($volume in $volumes) {
     try {
@@ -90,14 +115,14 @@ foreach ($volume in $volumes) {
 
             if ($partition.Size -lt $maxSize) {
                 $sizeDiffGB = [math]::Round(($maxSize - $partition.Size) / 1GB, 2)
-                Write-Host "Extending $($volume.DriveLetter): by $sizeDiffGB GB..."
+                Write-Log "Extending $($volume.DriveLetter): by $sizeDiffGB GB..."
                 Resize-Partition -DiskNumber $partition.DiskNumber -PartitionNumber $partition.PartitionNumber -Size $maxSize
-                Write-Host "Volume $($volume.DriveLetter): extended successfully"
+                Write-Log "Volume $($volume.DriveLetter): extended successfully"
             }
         }
     } catch {
-        Write-Host "Could not extend $($volume.DriveLetter): - $_"
+        Write-Log "Could not extend $($volume.DriveLetter): - $_"
     }
 }
 
-Write-Host "=== All Disk Operations Complete ==="
+Write-Log "=== All Disk Operations Complete ==="

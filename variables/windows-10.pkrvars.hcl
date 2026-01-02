@@ -25,8 +25,6 @@ winrm_use_ssl         = false
 winrm_insecure        = true
 
 windows_image_index     = "6"
-win_iso_unattend_drive  = "E:"
-win_iso_virtio_drive    = "F:"
 
 boot_command = [
   "<enter>"

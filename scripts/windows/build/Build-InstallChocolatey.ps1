@@ -6,19 +6,45 @@
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-Write-Host "=== Installing Chocolatey ===" -ForegroundColor Cyan
+# Setup logging
+$LogDir = "C:\Packer"
+$Timestamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
+$LogFile = Join-Path $LogDir "Build-InstallChocolatey-$Timestamp.log"
+
+if (-not (Test-Path $LogDir)) {
+    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+}
+
+function Write-Log {
+    param([string]$Message)
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$ts] $Message"
+    Write-Host $logMessage -ForegroundColor Green
+    Add-Content -Path $LogFile -Value $logMessage
+}
+
+function Write-LogError {
+    param([string]$Message)
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$ts] ERROR: $Message"
+    Write-Host $logMessage -ForegroundColor Red
+    Add-Content -Path $LogFile -Value $logMessage
+}
+
+Write-Log "=== Installing Chocolatey ==="
 
 # Check if already installed
 if (Get-Command choco -ErrorAction SilentlyContinue) {
-    Write-Host "Chocolatey already installed:" (choco --version)
+    Write-Log "Chocolatey already installed: $(choco --version)"
     exit 0
 }
 
 # Ensure TLS 1.2 (important for older Windows / Server)
-[Net.ServicePointManager]::SecurityProtocol = `
-    [Net.SecurityProtocolType]::Tls12
+Write-Log "Configuring TLS 1.2..."
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 try {
+    Write-Log "Downloading and installing Chocolatey..."
     Invoke-Expression (
         (New-Object System.Net.WebClient).DownloadString(
             'https://community.chocolatey.org/install.ps1'
@@ -26,7 +52,7 @@ try {
     )
 }
 catch {
-    Write-Error "Chocolatey installation failed: $_"
+    Write-LogError "Chocolatey installation failed: $_"
     exit 1
 }
 
@@ -37,10 +63,10 @@ $env:Path = [System.Environment]::GetEnvironmentVariable(
 
 # Verify
 if (Get-Command choco -ErrorAction SilentlyContinue) {
-    Write-Host "Chocolatey installed successfully:" (choco --version)
+    Write-Log "Chocolatey installed successfully: $(choco --version)"
 } else {
-    Write-Error "Chocolatey installation verification failed"
+    Write-LogError "Chocolatey installation verification failed"
     exit 1
 }
 
-Write-Host "=== Chocolatey Installation Complete ===" -ForegroundColor Green
+Write-Log "=== Chocolatey Installation Complete ==="

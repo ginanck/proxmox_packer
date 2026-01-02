@@ -1,12 +1,27 @@
 # Enables Remote Desktop Protocol (RDP) for remote access
 
-$LogFile = "C:\windows-rdp-setup.log"
+# Setup logging
+$LogDir = "C:\Packer"
+$Timestamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
+$LogFile = Join-Path $LogDir "Setup-EnableRDP-$Timestamp.log"
+
+if (-not (Test-Path $LogDir)) {
+    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+}
 
 function Write-Log {
     param([string]$Message)
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] $Message"
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$ts] $Message"
     Write-Host $logMessage -ForegroundColor Green
+    Add-Content -Path $LogFile -Value $logMessage
+}
+
+function Write-LogError {
+    param([string]$Message)
+    $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$ts] ERROR: $Message"
+    Write-Host $logMessage -ForegroundColor Red
     Add-Content -Path $LogFile -Value $logMessage
 }
 
