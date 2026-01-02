@@ -1,20 +1,29 @@
-# Apply-DiskManagement.ps1
-# Terraform-callable: Initialize new disks and extend existing volumes
+# Runtime-ManageDisks.ps1
+# Terraform-callable: Automatic disk management for all drives
 #
-# Usage Examples:
-#   .\Apply-DiskManagement.ps1                          # Full operation: extend + initialize
-#   .\Apply-DiskManagement.ps1 -ExtendOnly             # Only extend existing volumes
-#   .\Apply-DiskManagement.ps1 -InitializeOnly         # Only initialize new disks
-#   .\Apply-DiskManagement.ps1 -DriveLetter "C"        # Only extend C: drive
+# Features:
+#   - Brings offline disks online
+#   - Initializes RAW/unpartitioned disks (GPT + NTFS)
+#   - Extends all existing partitions to use unallocated space
+#
+# Idempotent: Safe to run multiple times - only performs necessary actions
+#
+# Note: CD-ROM relocation is handled by 01-CloudInit-RelocateCDROM.ps1 during first boot
+#
+# Usage:
+#   .\Runtime-ManageDisks.ps1    # Runs all operations automatically
 
-param(
-    [switch]$ExtendOnly,
-    [switch]$InitializeOnly,
-    [string]$DriveLetter
-)
-
+# Suppress PowerShell progress output (prevents CLIXML noise over WinRM)
+$ProgressPreference = 'SilentlyContinue'
 $ErrorActionPreference = "Continue"
 $logFile = "C:\Windows\Temp\disk-management-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+
+# Track changes for idempotency reporting
+$script:changesApplied = @{
+    DisksOnlined    = 0
+    DisksInitialized = 0
+    VolumesExtended  = 0
+}
 
 function Write-DiskLog {
     param([string]$Message, [string]$Level = "INFO")
@@ -24,108 +33,156 @@ function Write-DiskLog {
     Add-Content -Path $logFile -Value $logMessage
 }
 
-Write-DiskLog "=== Disk Management Operation Started ===" -Level "INFO"
-Write-DiskLog "Parameters: ExtendOnly=$ExtendOnly, InitializeOnly=$InitializeOnly, DriveLetter=$DriveLetter"
+Write-DiskLog "=== Automatic Disk Management Started ===" -Level "INFO"
 
-# Rescan storage subsystem
+# Rescan storage subsystem first
 Write-DiskLog "Rescanning storage subsystem..."
-Update-HostStorageCache
+try {
+    Update-HostStorageCache -ErrorAction SilentlyContinue
+} catch {
+    Write-DiskLog "Storage rescan warning (non-fatal): $_" -Level "WARN"
+}
 
-if (-not $InitializeOnly) {
-    # EXTEND EXISTING VOLUMES
-    Write-DiskLog "Checking for extendable volumes..."
-    $volumes = Get-Volume | Where-Object { $_.FileSystem -eq 'NTFS' -and $_.DriveLetter -ne $null }
+# ============================================================================
+# PHASE 1: BRING OFFLINE DISKS ONLINE
+# ============================================================================
+Write-DiskLog "--- Phase 1: Checking Offline Disks ---"
 
-    foreach ($volume in $volumes) {
-        if ($DriveLetter -and $volume.DriveLetter -ne $DriveLetter) { continue }
+$allDisks = Get-Disk
+$offlineDisks = $allDisks | Where-Object { $_.OperationalStatus -eq 'Offline' }
+
+if ($offlineDisks.Count -eq 0) {
+    Write-DiskLog "All disks already online - no action needed"
+} else {
+    foreach ($disk in $offlineDisks) {
+        # Double-check disk is still offline (idempotency)
+        $currentDisk = Get-Disk -Number $disk.Number -ErrorAction SilentlyContinue
+        if ($currentDisk.OperationalStatus -eq 'Online') {
+            Write-DiskLog "Disk $($disk.Number) already online - skipping"
+            continue
+        }
 
         try {
-            $partition = Get-Partition | Where-Object { $_.DriveLetter -eq $volume.DriveLetter }
-            if ($partition) {
-                $supportedSize = Get-PartitionSupportedSize -DiskNumber $partition.DiskNumber -PartitionNumber $partition.PartitionNumber
-                $maxSize = $supportedSize.SizeMax
-                $currentSize = $partition.Size
-
-                if ($maxSize -gt $currentSize) {
-                    $diffGB = [math]::Round(($maxSize - $currentSize) / 1GB, 2)
-                    Write-DiskLog "Extending $($volume.DriveLetter): by $diffGB GB (from $([math]::Round($currentSize / 1GB, 2)) GB to $([math]::Round($maxSize / 1GB, 2)) GB)" -Level "INFO"
-
-                    Resize-Partition -DiskNumber $partition.DiskNumber -PartitionNumber $partition.PartitionNumber -Size $maxSize -ErrorAction Stop
-                    Write-DiskLog "Successfully extended $($volume.DriveLetter):" -Level "SUCCESS"
-                } else {
-                    Write-DiskLog "$($volume.DriveLetter): already at maximum size ($([math]::Round($currentSize / 1GB, 2)) GB)" -Level "INFO"
-                }
-            }
+            Write-DiskLog "Bringing disk $($disk.Number) online (Size: $([math]::Round($disk.Size / 1GB, 2)) GB)"
+            Set-Disk -Number $disk.Number -IsOffline $false -ErrorAction Stop
+            Set-Disk -Number $disk.Number -IsReadOnly $false -ErrorAction SilentlyContinue
+            Write-DiskLog "Disk $($disk.Number) is now online" -Level "SUCCESS"
+            $script:changesApplied.DisksOnlined++
         } catch {
-            Write-DiskLog "Error extending $($volume.DriveLetter): - $_" -Level "ERROR"
+            Write-DiskLog "Failed to bring disk $($disk.Number) online: $_" -Level "ERROR"
         }
     }
 }
 
-if (-not $ExtendOnly) {
-    # INITIALIZE NEW DISKS
-    Write-DiskLog "Checking for uninitialized disks..."
+# ============================================================================
+# PHASE 2: INITIALIZE RAW/UNPARTITIONED DISKS
+# ============================================================================
+Write-DiskLog "--- Phase 2: Checking Unpartitioned Disks ---"
 
-    # Bring offline disks online first
-    $offlineDisks = Get-Disk | Where-Object { $_.OperationalStatus -eq 'Offline' }
-    foreach ($disk in $offlineDisks) {
-        Write-DiskLog "Bringing disk $($disk.Number) online..."
-        Set-Disk -Number $disk.Number -IsOffline $false
-    }
+# Refresh disk list after bringing disks online
+$rawDisks = Get-Disk | Where-Object { $_.PartitionStyle -eq 'RAW' -and $_.Size -gt 0 }
 
-    $rawDisks = Get-Disk | Where-Object { $_.PartitionStyle -eq 'RAW' }
+if ($rawDisks.Count -eq 0) {
+    Write-DiskLog "All disks already initialized - no action needed"
+} else {
+    Write-DiskLog "Found $($rawDisks.Count) uninitialized disk(s)"
 
-    if ($rawDisks.Count -eq 0) {
-        Write-DiskLog "No uninitialized disks found" -Level "INFO"
-    } else {
-        Write-DiskLog "Found $($rawDisks.Count) uninitialized disk(s)" -Level "INFO"
+    foreach ($disk in ($rawDisks | Sort-Object Number)) {
+        # Double-check disk is still RAW (idempotency)
+        $currentDisk = Get-Disk -Number $disk.Number -ErrorAction SilentlyContinue
+        if ($currentDisk.PartitionStyle -ne 'RAW') {
+            Write-DiskLog "Disk $($disk.Number) already initialized - skipping"
+            continue
+        }
 
-        # Get available drive letters (skip A, B, C, D)
-        $usedLetters = (Get-Volume | Where-Object { $_.DriveLetter -ne $null }).DriveLetter
-        $availableLetters = 69..90 | ForEach-Object { [char]$_ } | Where-Object { $usedLetters -notcontains $_ }
+        try {
+            $sizeGB = [math]::Round($disk.Size / 1GB, 2)
+            Write-DiskLog "Initializing disk $($disk.Number) (Size: $sizeGB GB)"
 
-        $letterIndex = 0
+            # Initialize as GPT
+            Initialize-Disk -Number $disk.Number -PartitionStyle GPT -ErrorAction Stop
+            Start-Sleep -Milliseconds 500
 
-        foreach ($disk in $rawDisks) {
-            try {
-                Write-DiskLog "Initializing disk $($disk.Number) (Size: $([math]::Round($disk.Size / 1GB, 2)) GB)" -Level "INFO"
+            # Create partition with auto-assigned drive letter
+            $partition = New-Partition -DiskNumber $disk.Number -UseMaximumSize -AssignDriveLetter -ErrorAction Stop
 
-                # Initialize as GPT
-                Initialize-Disk -Number $disk.Number -PartitionStyle GPT -ErrorAction Stop
+            # Format as NTFS
+            $label = "Data_Disk$($disk.Number)"
+            $partition | Format-Volume -FileSystem NTFS -NewFileSystemLabel $label -Confirm:$false -ErrorAction Stop
 
-                # Create partition using all available space
-                $partition = New-Partition -DiskNumber $disk.Number -UseMaximumSize -ErrorAction Stop
+            Write-DiskLog "Disk $($disk.Number) initialized as NTFS ($label) - Drive $($partition.DriveLetter):" -Level "SUCCESS"
+            $script:changesApplied.DisksInitialized++
 
-                # Assign drive letter
-                if ($letterIndex -lt $availableLetters.Count) {
-                    $driveLetter = $availableLetters[$letterIndex]
-                    $partition | Set-Partition -NewDriveLetter $driveLetter -ErrorAction Stop
-                    Write-DiskLog "Assigned drive letter: ${driveLetter}:" -Level "INFO"
-                } else {
-                    Write-DiskLog "No available drive letters, disk will not have a letter" -Level "WARN"
-                }
-
-                # Format as NTFS
-                $partition | Format-Volume -FileSystem NTFS -NewFileSystemLabel "Data$($disk.Number)" -Confirm:$false -ErrorAction Stop
-
-                Write-DiskLog "Disk $($disk.Number) initialized and formatted successfully" -Level "SUCCESS"
-                $letterIndex++
-
-            } catch {
-                Write-DiskLog "Failed to initialize disk $($disk.Number): $_" -Level "ERROR"
-            }
+        } catch {
+            Write-DiskLog "Failed to initialize disk $($disk.Number): $_" -Level "ERROR"
         }
     }
 }
 
-Write-DiskLog "=== Disk Management Operation Complete ===" -Level "INFO"
+# ============================================================================
+# PHASE 3: EXTEND ALL EXISTING VOLUMES
+# ============================================================================
+Write-DiskLog "--- Phase 3: Checking Volume Extensions ---"
+
+$volumes = Get-Volume | Where-Object {
+    $_.DriveLetter -ne $null -and $_.FileSystem -eq 'NTFS'
+}
+
+foreach ($volume in $volumes) {
+    try {
+        $partition = Get-Partition -DriveLetter $volume.DriveLetter -ErrorAction SilentlyContinue
+        if (-not $partition) { continue }
+
+        $supportedSize = Get-PartitionSupportedSize -DiskNumber $partition.DiskNumber -PartitionNumber $partition.PartitionNumber -ErrorAction SilentlyContinue
+        if (-not $supportedSize) { continue }
+
+        $maxSize = $supportedSize.SizeMax
+        $currentSize = $partition.Size
+
+        # Check if there's space to extend (at least 1MB)
+        $diffBytes = $maxSize - $currentSize
+        if ($diffBytes -gt 1MB) {
+            $currentGB = [math]::Round($currentSize / 1GB, 2)
+            $maxGB = [math]::Round($maxSize / 1GB, 2)
+            $diffGB = [math]::Round($diffBytes / 1GB, 2)
+
+            Write-DiskLog "Extending $($volume.DriveLetter): from $currentGB GB to $maxGB GB (+$diffGB GB)"
+
+            Resize-Partition -DiskNumber $partition.DiskNumber -PartitionNumber $partition.PartitionNumber -Size $maxSize -ErrorAction Stop
+
+            Write-DiskLog "$($volume.DriveLetter): extended successfully" -Level "SUCCESS"
+            $script:changesApplied.VolumesExtended++
+        }
+    } catch {
+        Write-DiskLog "Error extending $($volume.DriveLetter): - $_" -Level "ERROR"
+    }
+}
+
+if ($script:changesApplied.VolumesExtended -eq 0) {
+    Write-DiskLog "All volumes already at maximum size - no action needed"
+}
+
+# ============================================================================
+# SUMMARY
+# ============================================================================
+$totalChanges = $script:changesApplied.DisksOnlined + $script:changesApplied.DisksInitialized + $script:changesApplied.VolumesExtended
+
+if ($totalChanges -eq 0) {
+    Write-DiskLog "=== Disk Management Complete (No changes needed) ===" -Level "INFO"
+} else {
+    Write-DiskLog "=== Disk Management Complete ===" -Level "INFO"
+    Write-DiskLog "Changes applied: $($script:changesApplied.DisksOnlined) disks onlined, $($script:changesApplied.DisksInitialized) disks initialized, $($script:changesApplied.VolumesExtended) volumes extended"
+}
+
 Write-DiskLog "Log file: $logFile"
 
-# Output summary for Terraform
+# Output JSON summary for Terraform
 $summary = @{
-    LogFile = $logFile
+    LogFile   = $logFile
     Timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    Success = $true
+    Success   = $true
+    Changed   = ($totalChanges -gt 0)
+    Changes   = $script:changesApplied
 }
 
 $summary | ConvertTo-Json

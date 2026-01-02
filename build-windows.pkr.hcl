@@ -190,9 +190,15 @@ build {
     destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\pc2_scripts\\"
   }
 
+  # LocalScripts run in alphabetical order - 01 runs before 02
   provisioner "file" {
-    source      = "${path.root}/scripts/windows/build/CloudInit-DiskManagement.ps1"
-    destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\LocalScripts\\CloudInit-DiskManagement.ps1"
+    source      = "${path.root}/scripts/windows/build/01-CloudInit-RelocateCDROM.ps1"
+    destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\LocalScripts\\01-CloudInit-RelocateCDROM.ps1"
+  }
+
+  provisioner "file" {
+    source      = "${path.root}/scripts/windows/build/02-CloudInit-DiskManagement.ps1"
+    destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\LocalScripts\\02-CloudInit-DiskManagement.ps1"
   }
 
   # Phase 4: Finalize and generalize template (re-enable security, run sysprep)
