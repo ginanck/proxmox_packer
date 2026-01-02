@@ -74,12 +74,59 @@ try {
     Write-Log "Downloading Chocolatey install script..."
     $installScript = (New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')
 
+    function Wait-ForNetwork {
+        param(
+            [int]$TimeoutSec = 600,
+            [int]$IntervalSec = 10
+        )
+        $elapsed = 0
+        while ($elapsed -lt $TimeoutSec) {
+            try {
+                $req = Invoke-WebRequest -Uri 'https://community.chocolatey.org' -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
+                if ($req.StatusCode -eq 200) { return $true }
+            } catch {}
+            Start-Sleep -Seconds $IntervalSec
+            $elapsed += $IntervalSec
+        }
+        return $false
+    }
+
+    if ($Resume) {
+        Write-Log "Resume mode: waiting for network connectivity..."
+        if (-not (Wait-ForNetwork -TimeoutSec 600 -IntervalSec 10)) {
+            Write-LogError "Network did not become available within timeout on resume; aborting Chocolatey install"
+            exit 1
+        }
+        try { [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072 } catch {}
+    }
+
     Write-Log "Executing Chocolatey installer..."
     Invoke-Expression $installScript
+
+    # After running the install script, check if a reboot is required
+    $rebootPending = $false
+    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") { $rebootPending = $true }
+    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") { $rebootPending = $true }
+    $sess = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager" -ErrorAction SilentlyContinue
+    if ($sess -and $sess.PendingFileRenameOperations) { $rebootPending = $true }
+
+    if ($rebootPending -and -not $Resume) {
+        Write-Log "Reboot required after Chocolatey install. Forcing restart now; the resume provisioner will run when WinRM reconnects."
+        try {
+            Restart-Computer -Force
+            exit 0
+        } catch {
+            Write-LogError ("Failed to restart computer: {0}" -f $_.Exception.Message)
+            exit 1
+        }
+    } elseif ($rebootPending -and $Resume) {
+        Write-LogError "Reboot still required after resume - aborting"
+        exit 1
+    }
 }
 catch {
     Write-LogError "Chocolatey installation failed: $_"
-    Write-Log "Continuing without Chocolatey - it can be installed manually later"
+    Write-Log "Continuing without Chocolatey - it can be installed Chocolatey-Resume stage later"
     exit 0  # Exit gracefully, don't fail the build
 }
 

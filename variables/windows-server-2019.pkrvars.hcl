@@ -1,5 +1,3 @@
-vm_virtio_iso_file = "virtio-win-0.1.204.iso"
-
 vm_iso_file = "Win2019_17763.3650.221105-1748.rs5_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso"
 vm_id       = "7953"
 

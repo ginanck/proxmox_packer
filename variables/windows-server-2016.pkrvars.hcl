@@ -1,5 +1,3 @@
-vm_virtio_iso_file = "virtio-win-0.1.204.iso"
-
 vm_iso_file = "Win2016_Datacenter_EVAL_en-us_14393_refresh.ISO"
 vm_id       = "7952"
 

@@ -66,24 +66,13 @@ do {
     $drives = Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue | Where-Object { $_.Root -match '^[A-Z]:\\$' }
 
     foreach ($drive in $drives) {
-        if ($useMsiInstaller) {
-            # For Windows Server 2012 R2 and older - use MSI installer
-            $msiPath = Join-Path $drive.Root "guest-agent\qemu-ga-x86_64.msi"
-            if (Test-Path $msiPath) {
-                $installer = $msiPath
-                $installerType = "MSI"
-                Write-Log "Found VirtIO MSI installer at: $installer"
-                break
-            }
-        } else {
-            # For Windows 10/11 and Server 2016+ - use EXE installer
-            $exePath = Join-Path $drive.Root "virtio-win-guest-tools.exe"
-            if (Test-Path $exePath) {
-                $installer = $exePath
-                $installerType = "EXE"
-                Write-Log "Found VirtIO EXE installer at: $installer"
-                break
-            }
+        $exePath = Join-Path $drive.Root "virtio-win-guest-tools.exe"
+        if (Test-Path $exePath) {
+            $installer = $exePath
+            $installerType = "EXE"
+            $installerDrive = $drive.Root
+            Write-Log "Found VirtIO EXE installer at: $installer"
+            break
         }
     }
 
@@ -99,6 +88,70 @@ if (-not $installer) {
     Write-Log "Available drives:"
     Get-PSDrive -PSProvider FileSystem | ForEach-Object { Write-Log "  $($_.Root)" }
     exit 1
+}
+
+# ============================================================
+# Import RedHat.cer into Trusted Publishers (only for Windows Server 2012 R2)
+# ============================================================
+$is2012R2 = ($osVersion.Major -eq 6 -and $osVersion.Minor -eq 3)
+
+if (-not $is2012R2) {
+    Write-Log "Skipping RedHat.cer import: OS is not Windows Server 2012 R2 (Detected: $osCaption, Version: $osVersion)"
+} else {
+    Write-Log "OS detected as Windows Server 2012 R2; searching for RedHat.cer certificate on available drives..."
+
+    $certPath = $null
+    $maxAttempts = 30
+    $attempt = 0
+
+    do {
+        # Refresh drives in case media was mounted recently
+        $drives = Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue | Where-Object { $_.Root -match '^[A-Z]:\\$' }
+
+        foreach ($drive in $drives) {
+            try {
+                # Search recursively for the file (take the first match)
+                $found = Get-ChildItem -Path $drive.Root -Filter 'RedHat.cer' -Recurse -ErrorAction SilentlyContinue -Force | Select-Object -First 1
+                if ($found -and (Test-Path $found.FullName)) {
+                    $certPath = $found.FullName
+                    Write-Log "Found RedHat.cer at: $certPath"
+                    break
+                }
+            } catch {
+                Write-Log "Error while searching drive $($drive.Root): $_"
+            }
+        }
+
+        if (-not $certPath) {
+            $attempt++
+            Write-Log "RedHat.cer not found yet... attempt $attempt of $maxAttempts"
+            Start-Sleep -Seconds 2
+        }
+    } while (-not $certPath -and $attempt -lt $maxAttempts)
+
+    if (-not $certPath) {
+        Write-LogError "RedHat.cer not found after $maxAttempts attempts"
+    } else {
+        try {
+            # Load cert to compute thumbprint and check if it's already present
+            $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath)
+            $thumb = $cert.Thumbprint
+            $existing = Get-ChildItem -Path Cert:\LocalMachine\TrustedPublisher -ErrorAction SilentlyContinue | Where-Object { $_.Thumbprint -eq $thumb }
+
+            if ($existing) {
+                Write-Log "Certificate already present in Trusted Publishers (thumbprint: $thumb)"
+            } else {
+                $importResult = Import-Certificate -FilePath $certPath -CertStoreLocation 'Cert:\LocalMachine\TrustedPublisher' -ErrorAction Stop
+                if ($importResult) {
+                    Write-Log "Certificate imported to Trusted Publishers (thumbprint: $($cert.Thumbprint))"
+                } else {
+                    Write-LogError "Import-Certificate returned no result; verify certificate content and permissions"
+                }
+            }
+        } catch {
+            Write-LogError "Failed to import certificate: $_"
+        }
+    }
 }
 
 # ============================================================

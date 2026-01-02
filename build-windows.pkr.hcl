@@ -97,6 +97,7 @@ source "proxmox-iso" "proxmox-vm-windows" {
       "Setup-WinRM.ps1"               = file("${path.root}/scripts/windows/build/Setup-WinRM.ps1")
       "cloudbase-init.conf"           = file("${path.root}/files/common/windows/cloudbase-init.conf")
       "cloudbase-init-unattend.conf"  = file("${path.root}/files/common/windows/cloudbase-init-unattend.conf")
+      "RedHat.cer"                    = file("${path.root}/files/common/windows/RedHat.cer")
     }
     cd_label = "UNATTEND"
     iso_storage_pool = var.vm_storage_pool
@@ -182,6 +183,16 @@ build {
       "${path.root}/scripts/windows/build/Build-InstallChocolatey.ps1"
     ]
     execution_policy = "Bypass"
+  }
+
+  # If Chocolatey required a reboot, resume install after the reboot in a
+  # separate provisioner so Packer can reconnect cleanly.
+  provisioner "powershell" {
+    scripts = [
+      "${path.root}/scripts/windows/build/Build-InstallChocolatey.ps1"
+    ]
+    execution_policy = "Bypass"
+    pause_before = "60s"
   }
 
   # Phase 3: Deploy runtime and first-boot scripts (after Cloudbase-Init is installed)

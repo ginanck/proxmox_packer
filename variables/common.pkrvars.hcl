@@ -22,7 +22,7 @@ vm_nic_bridge      = "vmbr1"
 vm_nic_model       = "virtio"
 vm_nic_firewall    = "false"
 
-vm_virtio_iso_file = "virtio-win-0.1.285.iso"
+vm_virtio_iso_file = "virtio-win-0.1.271.iso"
 
 node_name          = "carbon"
 

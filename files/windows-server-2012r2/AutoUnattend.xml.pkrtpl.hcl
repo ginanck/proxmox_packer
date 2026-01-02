@@ -67,11 +67,11 @@
 
             <DriverPaths>
                 <PathAndCredentials wcm:action="add">
-                    <Path>${win_iso_virtio_drive}\vioserial\2k12R2\amd64</Path>
+                    <Path>F:\vioserial\2k12R2\amd64</Path>
                 </PathAndCredentials>
 
                 <PathAndCredentials wcm:action="add">
-                    <Path>${win_iso_virtio_drive}\vioscsi\2k12R2\amd64</Path>
+                    <Path>F:\vioscsi\2k12R2\amd64</Path>
                 </PathAndCredentials>
             </DriverPaths>
         </component>

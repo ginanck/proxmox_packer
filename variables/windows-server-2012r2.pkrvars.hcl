@@ -1,4 +1,4 @@
-vm_virtio_iso_file = "virtio-win-0.1.204.iso"
+vm_virtio_iso_file = "virtio-win-0.1.189.iso"
 
 vm_iso_file = "Win2012r2_9600.17050.WINBLUE_REFRESH.140317-1640_X64FRE_SERVER_EVAL_EN-US-IR3_SSS_X64FREE_EN-US_DV9.ISO"
 vm_id       = "7951"
