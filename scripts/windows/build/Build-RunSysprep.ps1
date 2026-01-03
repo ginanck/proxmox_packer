@@ -30,6 +30,7 @@ function Write-LogError {
 }
 
 Write-Log "=== Starting FINAL pre-sysprep phase ==="
+Write-Log "Note: Pending reboot checks should have been handled by Build-PreSysprepReboot.ps1"
 
 # ===============================
 # FINAL CLEANUP (SAFE ORDER)
@@ -99,75 +100,6 @@ try {
     Write-Log "Autologon registry cleaned"
 } catch {
     Write-LogError "Failed to clean autologon registry: $_"
-}
-
-# ===============================
-# SYSPREP EXECUTION
-# ===============================
-
-function Test-PendingReboot {
-    # Returns $true if there are known pending-reboot indicators (Windows Update, CBS, PendingFileRenameOperations, etc.)
-    $pending = $false
-
-    try {
-        if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending') { $pending = $true }
-    } catch { }
-
-    try {
-        $pf = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations -ErrorAction SilentlyContinue).PendingFileRenameOperations
-        if ($pf) { $pending = $true }
-    } catch { }
-
-    try {
-        if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired') { $pending = $true }
-    } catch { }
-
-    try {
-        if ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Updates' -Name UpdateExeVolatile -ErrorAction SilentlyContinue).UpdateExeVolatile) { $pending = $true }
-    } catch { }
-
-    return $pending
-}
-
-function Register-RunOnce-Sysprep {
-    param([string]$ScriptPath, [string]$Args)
-    $runonceKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
-    $name = 'RunSysprepAfterReboot'
-    $command = "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$ScriptPath`" $Args"
-    try {
-        Set-ItemProperty -Path $runonceKey -Name $name -Value $command -Force
-        return $true
-    } catch {
-        Write-LogError "Failed to register RunOnce entry: $_"
-        return $false
-    }
-}
-
-# If invoked via RunOnce, remove the RunOnce entry so it doesn't re-run forever
-$runonceArg = $false
-if ($args -contains '-runonce') {
-    $runonceArg = $true;
-    try { Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'RunSysprepAfterReboot' -ErrorAction SilentlyContinue } catch {}
-}
-
-if (-not $runonceArg) {
-    if (Test-PendingReboot) {
-        Write-Log "Pending reboot detected (Windows Updates or pending operations). Scheduling Sysprep to run after reboot and restarting now..."
-        $scriptPath = $MyInvocation.MyCommand.Definition
-        if (Register-RunOnce-Sysprep -ScriptPath $scriptPath -Args '-runonce') {
-            Write-Log "RunOnce registered. Rebooting..."
-            # Give Packer time to disconnect gracefully before reboot
-            Start-Sleep -Seconds 5
-            # Exit cleanly before reboot to allow Packer to finish
-            shutdown /r /t 10
-            exit 0
-        } else {
-            Write-LogError "Could not register RunOnce entry; aborting Sysprep to avoid failure."
-            exit 1
-        }
-    }
-} else {
-    Write-Log "Detected RunOnce invocation; proceeding with Sysprep."
 }
 
 Write-Log "=== Executing Sysprep ==="

@@ -208,6 +208,20 @@ build {
     execution_policy = "Bypass"
   }
 
+  # Check for pending reboots and handle them before sysprep
+  provisioner "powershell" {
+    script = "${path.root}/scripts/windows/build/Build-PreSysprepReboot.ps1"
+    execution_policy = "Bypass"
+  }
+
+  # Restart if needed (handles Windows Updates, pending operations, etc.)
+  # This provisioner will only restart if actually needed
+  provisioner "windows-restart" {
+    restart_check_command = "powershell -command \"& {Write-Output 'Machine restarted successfully'}\""
+    restart_timeout = "30m"
+  }
+
+  # Final sysprep execution (simplified - no reboot logic)
   provisioner "powershell" {
     scripts = [
       "${path.root}/scripts/windows/build/Build-RunSysprep.ps1"
