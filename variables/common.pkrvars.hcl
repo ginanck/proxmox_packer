@@ -37,3 +37,10 @@ boot_wait          = "10s"
 task_timeout       = "10m"
 qemu_agent         = true
 ssh_wait_timeout   = "30m"
+
+winrm_username        = "Administrator"
+winrm_password        = "Passw0rd1"
+winrm_timeout         = "1h"
+winrm_port            = "5985"
+winrm_use_ssl         = false
+winrm_insecure        = true

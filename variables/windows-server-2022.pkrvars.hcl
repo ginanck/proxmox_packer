@@ -17,12 +17,6 @@ vm_nic_model      = "e1000"
 boot_wait         = "5s"
 
 communicator          = "winrm"
-winrm_username        = "Administrator"
-winrm_password        = "REDACTED"
-winrm_timeout         = "1h"
-winrm_port            = "5985"
-winrm_use_ssl         = false
-winrm_insecure        = true
 
 windows_image_index     = "2"
 
