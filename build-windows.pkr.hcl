@@ -97,6 +97,8 @@ source "proxmox-iso" "proxmox-vm-windows" {
       "Setup-WinRM.ps1"               = file("${path.root}/scripts/windows/build/Setup-WinRM.ps1")
       "cloudbase-init.conf"           = file("${path.root}/files/common/windows/cloudbase-init.conf")
       "cloudbase-init-unattend.conf"  = file("${path.root}/files/common/windows/cloudbase-init-unattend.conf")
+      "sysprep-unattend-modern.xml"   = file("${path.root}/files/common/windows/unattend/sysprep-modern.xml")
+      "sysprep-unattend-legacy.xml"   = file("${path.root}/files/common/windows/unattend/sysprep-legacy.xml")
       "RedHat.cer"                    = file("${path.root}/files/common/windows/RedHat.cer")
     }
     cd_label = "UNATTEND"
@@ -163,20 +165,20 @@ build {
     "source.proxmox-iso.proxmox-vm-windows"
   ]
 
-  # Phase 1: Prepare build environment (disable security, configure admin, enable RDP)
+  provisioner "powershell" {
+    script = "${path.root}/scripts/windows/build/Build-ManageSecurity.ps1"
+    environment_vars = ["SECURITY_ACTION=Disable"]
+    execution_policy = "Bypass"
+  }
+
   provisioner "powershell" {
     scripts = [
-      "${path.root}/scripts/windows/build/Build-ManageSecurity.ps1",
       "${path.root}/scripts/windows/build/Setup-EnableAdministrator.ps1",
       "${path.root}/scripts/windows/build/Setup-EnableRDP.ps1"
-    ]
-    environment_vars = [
-      "SECURITY_ACTION=Disable"
     ]
     execution_policy = "Bypass"
   }
 
-  # Phase 2: Install required software (Cloudbase-Init creates directories)
   provisioner "powershell" {
     scripts = [
       "${path.root}/scripts/windows/build/Build-InstallCloudbase.ps1",
@@ -185,14 +187,11 @@ build {
     execution_policy = "Bypass"
   }
 
-  # Phase 3: Deploy runtime and first-boot scripts (after Cloudbase-Init is installed)
   provisioner "file" {
     source      = "${path.root}/scripts/windows/terraform-callable/"
     destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\pc2_scripts\\"
-    pause_before = "30s"
   }
 
-  # LocalScripts run in alphabetical order - 01 runs before 02
   provisioner "file" {
     source      = "${path.root}/scripts/windows/build/01-CloudInit-RelocateCDROM.ps1"
     destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\LocalScripts\\01-CloudInit-RelocateCDROM.ps1"
@@ -203,14 +202,15 @@ build {
     destination = "C:\\Program Files\\Cloudbase Solutions\\Cloudbase-Init\\LocalScripts\\02-CloudInit-DiskManagement.ps1"
   }
 
-  # Phase 4: Finalize and generalize template (re-enable security, run sysprep)
+  provisioner "powershell" {
+    script = "${path.root}/scripts/windows/build/Build-ManageSecurity.ps1"
+    environment_vars = ["SECURITY_ACTION=Enable"]
+    execution_policy = "Bypass"
+  }
+
   provisioner "powershell" {
     scripts = [
-      "${path.root}/scripts/windows/build/Build-ManageSecurity.ps1",
       "${path.root}/scripts/windows/build/Build-RunSysprep.ps1"
-    ]
-    environment_vars = [
-      "SECURITY_ACTION=Enable"
     ]
     execution_policy = "Bypass"
   }

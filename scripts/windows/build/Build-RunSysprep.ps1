@@ -1,14 +1,10 @@
 # Run-Sysprep.ps1
-# Generalizes Windows installation for template cloning
-# This script should be the LAST script run before template creation
-#
-# Sysprep performs:
-# - Removes machine-specific SID (Security Identifier)
-# - Clears hardware-specific drivers and settings
-# - Resets Windows activation
-# - Prepares for OOBE on first boot of cloned VMs
+# Final cleanup + Sysprep execution
+# This MUST be the last script executed during image build
 
-# Setup logging
+# ===============================
+# LOGGING
+# ===============================
 $LogDir = "C:\Packer"
 $Timestamp = Get-Date -Format "yyyy-MM-dd-HH-mm-ss"
 $LogFile = Join-Path $LogDir "Build-RunSysprep-$Timestamp.log"
@@ -20,218 +16,333 @@ if (-not (Test-Path $LogDir)) {
 function Write-Log {
     param([string]$Message)
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$ts] $Message"
-    Write-Host $logMessage -ForegroundColor Green
-    Add-Content -Path $LogFile -Value $logMessage
+    $msg = "[$ts] $Message"
+    Write-Host $msg -ForegroundColor Green
+    Add-Content -Path $LogFile -Value $msg
 }
 
 function Write-LogError {
     param([string]$Message)
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$ts] ERROR: $Message"
-    Write-Host $logMessage -ForegroundColor Red
-    Add-Content -Path $LogFile -Value $logMessage
+    $msg = "[$ts] ERROR: $Message"
+    Write-Host $msg -ForegroundColor Red
+    Add-Content -Path $LogFile -Value $msg
 }
 
-Write-Log "=== Starting Sysprep Preparation ==="
+Write-Log "=== Starting FINAL pre-sysprep phase ==="
 
-# ============================================================================
-# 1. PRE-SYSPREP CLEANUP
-# ============================================================================
-Write-Log "Performing pre-sysprep cleanup..."
+# ===============================
+# FINAL CLEANUP (SAFE ORDER)
+# ===============================
+Write-Log "Performing final cleanup before Sysprep..."
 
-# Clear Windows Update cache
-Write-Log "Clearing Windows Update cache..."
+# --- TEMP FILES ---
+Write-Log "Cleaning temporary directories..."
 try {
-    Stop-Service -Name wuauserv -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "C:\Windows\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Start-Service -Name wuauserv -ErrorAction SilentlyContinue
-    Write-Log "Windows Update cache cleared"
+    Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Log "Temporary files cleaned"
 } catch {
-    Write-LogError "Failed to clear Windows Update cache: $_"
+    Write-LogError "Temp cleanup failed: $_"
 }
 
-# Clear temp files
-Write-Log "Clearing temporary files..."
+# --- EVENT LOGS (SAFE ON ALL VERSIONS) ---
+Write-Log "Clearing event logs (System & Application only)..."
 try {
-    Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Log "Temporary files cleared"
-} catch {
-    Write-LogError "Failed to clear temp files: $_"
-}
-
-# Clear event logs (optional - keeps template clean)
-Write-Log "Clearing event logs..."
-try {
-    wevtutil cl System 2>&1 | Out-Null
-    wevtutil cl Application 2>&1 | Out-Null
-    wevtutil cl Security 2>&1 | Out-Null
+    wevtutil cl System 2>$null
+    wevtutil cl Application 2>$null
     Write-Log "Event logs cleared"
 } catch {
-    Write-LogError "Failed to clear event logs: $_"
+    Write-LogError "Event log cleanup failed: $_"
 }
 
-# ============================================================================
-# 2. CREATE SYSPREP UNATTEND FILE
-# ============================================================================
-Write-Log "Creating Sysprep unattend file..."
+# NOTE:
+# - We intentionally DO NOT clear:
+#   - Windows Update cache
+#   - Security event log
+# These cause servicing and security provider delays on 2016/2019
 
-# This unattend file is used BY sysprep during generalization
-# It configures what happens on first boot after cloning
-$sysprepUnattend = @'
-<?xml version="1.0" encoding="utf-8"?>
-<unattend xmlns="urn:schemas-microsoft-com:unattend">
-    <settings pass="generalize">
-        <component name="Microsoft-Windows-PnpSysprep" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral"
-                   versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-            <!-- Keep device drivers installed during generalization -->
-            <PersistAllDeviceInstalls>true</PersistAllDeviceInstalls>
-            <!-- Don't cleanup plug and play drivers -->
-            <DoNotCleanUpNonPresentDevices>true</DoNotCleanUpNonPresentDevices>
-        </component>
-        <component name="Microsoft-Windows-Security-SPP" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral"
-                   versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-            <!-- Skip Windows reactivation on first boot -->
-            <SkipRearm>1</SkipRearm>
-        </component>
-    </settings>
-    <settings pass="specialize">
-        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral"
-                   versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-            <!-- Random computer name - CloudBase-Init will set the real hostname -->
-            <ComputerName>*</ComputerName>
-        </component>
-        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral"
-                   versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-            <RunSynchronous>
-                <RunSynchronousCommand wcm:action="add">
-                    <Order>1</Order>
-                    <Description>Enable Administrator Account</Description>
-                    <Path>cmd /c net user Administrator /active:yes</Path>
-                </RunSynchronousCommand>
-            </RunSynchronous>
-        </component>
-    </settings>
-    <settings pass="oobeSystem">
-        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral"
-                   versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-            <UserLocale>en-US</UserLocale>
-            <SystemLocale>en-US</SystemLocale>
-            <UILanguage>en-US</UILanguage>
-            <InputLocale>0409:00000409</InputLocale>
-        </component>
-        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral"
-                   versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-            <OOBE>
-                <!-- Skip OOBE screens - CloudBase-Init handles setup -->
-                <HideEULAPage>true</HideEULAPage>
-                <HideLocalAccountScreen>true</HideLocalAccountScreen>
-                <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
-                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
-                <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
-                <ProtectYourPC>3</ProtectYourPC>
-                <UnattendEnableRetailDemo>false</UnattendEnableRetailDemo>
-                <SkipMachineOOBE>true</SkipMachineOOBE>
-                <SkipUserOOBE>true</SkipUserOOBE>
-            </OOBE>
-            <!-- Let CloudBase-Init set the hostname from Terraform metadata -->
-            <ComputerName>*</ComputerName>
-            <TimeZone>UTC</TimeZone>
-        </component>
-    </settings>
-</unattend>
-'@
+# ===============================
+# CLOUDBASE-INIT SETUP
+# ===============================
+Write-Log "Configuring Cloudbase-Init SetupComplete hook..."
 
-$sysprepUnattendPath = "C:\Windows\System32\Sysprep\unattend-sysprep.xml"
-try {
-    $sysprepUnattend | Out-File -FilePath $sysprepUnattendPath -Encoding UTF8 -Force
-    Write-Log "Sysprep unattend file created: $sysprepUnattendPath"
-} catch {
-    Write-LogError "Failed to create sysprep unattend file: $_"
-    exit 1
+$setupPath = "C:\Windows\Setup\Scripts"
+if (-not (Test-Path $setupPath)) {
+    New-Item -Path $setupPath -ItemType Directory -Force | Out-Null
 }
 
-# ============================================================================
-# 3. CONFIGURE CLOUDBASE-INIT FOR POST-SYSPREP
-# ============================================================================
-Write-Log "Configuring CloudBase-Init for post-sysprep execution..."
-
-# Ensure CloudBase-Init runs SetupComplete after sysprep
-$setupCompletePath = "C:\Windows\Setup\Scripts"
-if (-not (Test-Path $setupCompletePath)) {
-    New-Item -Path $setupCompletePath -ItemType Directory -Force | Out-Null
-}
-
-# SetupComplete.cmd runs after Windows setup completes (after sysprep OOBE)
-$setupCompleteCmd = @'
+$setupComplete = @'
 @echo off
-REM SetupComplete.cmd - Runs after Sysprep OOBE completes
-REM Triggers CloudBase-Init for final configuration
-
-echo Starting CloudBase-Init post-sysprep configuration...
-"C:\Program Files\Cloudbase Solutions\Cloudbase-Init\bin\cloudbase-init.exe" --config-file "C:\Program Files\Cloudbase Solutions\Cloudbase-Init\conf\cloudbase-init.conf"
+echo Running Cloudbase-Init after Sysprep...
+"C:\Program Files\Cloudbase Solutions\Cloudbase-Init\bin\cloudbase-init.exe" ^
+ --config-file "C:\Program Files\Cloudbase Solutions\Cloudbase-Init\conf\cloudbase-init.conf"
 '@
 
 try {
-    $setupCompleteCmd | Out-File -FilePath "$setupCompletePath\SetupComplete.cmd" -Encoding ASCII -Force
-    Write-Log "SetupComplete.cmd created for CloudBase-Init execution"
+    $setupComplete | Out-File "$setupPath\SetupComplete.cmd" -Encoding ASCII -Force
+    Write-Log "SetupComplete.cmd created"
 } catch {
-    Write-LogError "Failed to create SetupComplete.cmd: $_"
+    Write-LogError "Failed to write SetupComplete.cmd: $_"
 }
 
-# ============================================================================
-# 4. REMOVE PACKER BUILD ARTIFACTS
-# ============================================================================
-Write-Log "Cleaning up Packer build artifacts..."
+# ===============================
+# REMOVE BUILD AUTOLOGON ARTIFACTS
+# ===============================
+Write-Log "Removing autologon build artifacts..."
 
-# Remove the ansible user auto-logon (CloudBase-Init will manage users)
 try {
-    $winlogonPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
-    Remove-ItemProperty -Path $winlogonPath -Name "AutoAdminLogon" -Force -ErrorAction SilentlyContinue
-    Remove-ItemProperty -Path $winlogonPath -Name "DefaultUserName" -Force -ErrorAction SilentlyContinue
-    Remove-ItemProperty -Path $winlogonPath -Name "DefaultPassword" -Force -ErrorAction SilentlyContinue
-    Write-Log "Auto-logon credentials removed"
+    $winlogon = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
+    Remove-ItemProperty -Path $winlogon -Name AutoAdminLogon -Force -ErrorAction SilentlyContinue
+    Remove-ItemProperty -Path $winlogon -Name DefaultUserName -Force -ErrorAction SilentlyContinue
+    Remove-ItemProperty -Path $winlogon -Name DefaultPassword -Force -ErrorAction SilentlyContinue
+    Write-Log "Autologon registry cleaned"
 } catch {
-    Write-LogError "Failed to remove auto-logon: $_"
+    Write-LogError "Failed to clean autologon registry: $_"
 }
 
-# ============================================================================
-# 5. RUN SYSPREP
-# ============================================================================
+# ===============================
+# SYSPREP EXECUTION
+# ===============================
+
+function Test-PendingReboot {
+    # Returns $true if there are known pending-reboot indicators (Windows Update, CBS, PendingFileRenameOperations, etc.)
+    $pending = $false
+
+    try {
+        if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending') { $pending = $true }
+    } catch { }
+
+    try {
+        $pf = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' -Name PendingFileRenameOperations -ErrorAction SilentlyContinue).PendingFileRenameOperations
+        if ($pf) { $pending = $true }
+    } catch { }
+
+    try {
+        if (Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired') { $pending = $true }
+    } catch { }
+
+    try {
+        if ((Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Updates' -Name UpdateExeVolatile -ErrorAction SilentlyContinue).UpdateExeVolatile) { $pending = $true }
+    } catch { }
+
+    return $pending
+}
+
+function Register-RunOnce-Sysprep {
+    param([string]$ScriptPath, [string]$Args)
+    $runonceKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
+    $name = 'RunSysprepAfterReboot'
+    $command = "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$ScriptPath`" $Args"
+    try {
+        Set-ItemProperty -Path $runonceKey -Name $name -Value $command -Force
+        return $true
+    } catch {
+        Write-LogError "Failed to register RunOnce entry: $_"
+        return $false
+    }
+}
+
+# If invoked via RunOnce, remove the RunOnce entry so it doesn't re-run forever
+$runonceArg = $false
+if ($args -contains '-runonce') {
+    $runonceArg = $true;
+    try { Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce' -Name 'RunSysprepAfterReboot' -ErrorAction SilentlyContinue } catch {}
+}
+
+if (-not $runonceArg) {
+    if (Test-PendingReboot) {
+        Write-Log "Pending reboot detected (Windows Updates or pending operations). Scheduling Sysprep to run after reboot and restarting now..."
+        $scriptPath = $MyInvocation.MyCommand.Definition
+        if (Register-RunOnce-Sysprep -ScriptPath $scriptPath -Args '-runonce') {
+            Write-Log "RunOnce registered. Rebooting..."
+            shutdown /r /t 0
+            exit 0
+        } else {
+            Write-LogError "Could not register RunOnce entry; aborting Sysprep to avoid failure."
+            exit 1
+        }
+    }
+} else {
+    Write-Log "Detected RunOnce invocation; proceeding with Sysprep."
+}
+
 Write-Log "=== Executing Sysprep ==="
-Write-Log "Sysprep parameters:"
-Write-Log "  /generalize - Removes SID and machine-specific information"
-Write-Log "  /oobe - Boot to Out-of-Box Experience on next start"
-Write-Log "  /shutdown - Shutdown after sysprep completes"
-Write-Log "  /mode:vm - Optimized for virtual machine environments"
-Write-Log "  /unattend - Use custom unattend file for OOBE"
 
 $sysprepExe = "C:\Windows\System32\Sysprep\sysprep.exe"
-$sysprepArgs = "/generalize /oobe /shutdown /mode:vm /unattend:$sysprepUnattendPath"
+$unattend   = "C:\Windows\System32\Sysprep\unattend-sysprep.xml"
+$args       = "/generalize /oobe /shutdown /mode:vm /unattend:$unattend"
 
-Write-Log "Executing: $sysprepExe $sysprepArgs"
-Write-Log "=== System will shutdown after Sysprep completes ==="
+# Ensure an unattend file is present for Sysprep. Prefer files on the UNATTEND ISO, if available.
+function Get-DriveByLabel {
+    param([Parameter(Mandatory=$true)][string]$Label)
 
-# Start sysprep - this will shutdown the VM
-try {
-    $process = Start-Process -FilePath $sysprepExe -ArgumentList $sysprepArgs -Wait -PassThru -NoNewWindow
+    # Modern Get-Volume approach
+    try {
+        $vol = Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.FileSystemLabel -eq $Label } | Select-Object -First 1
+        if ($vol -and $vol.DriveLetter) { return "$($vol.DriveLetter):\" }
+    } catch { }
 
-    if ($process.ExitCode -ne 0) {
-        Write-LogError "Sysprep failed with exit code: $($process.ExitCode)"
-        Write-LogError "Check C:\Windows\System32\Sysprep\Panther\setuperr.log for details"
-        exit 1
-    }
-} catch {
-    Write-LogError "Failed to execute Sysprep: $_"
-    exit 1
+    # Fallback for older OSes
+    try {
+        $wmi = Get-WmiObject Win32_Volume -ErrorAction SilentlyContinue | Where-Object { $_.Label -eq $Label } | Select-Object -First 1
+        if ($wmi -and $wmi.DriveLetter) { return "$($wmi.DriveLetter):\" }
+    } catch { }
+
+    return $null
 }
 
-# Note: Script will not reach here as sysprep shuts down the system
-Write-Log "Sysprep completed successfully"
+Write-Log "Checking for sysprep unattend file..."
+$unattendDrive = Get-DriveByLabel -Label "UNATTEND"
+if ($unattendDrive) {
+    Write-Log "Found UNATTEND drive at $unattendDrive. Detecting OS to select correct sysprep file..."
+    # Detect OS caption/version
+    try {
+        $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+        $caption = $os.Caption
+    } catch {
+        try { $caption = (Get-WmiObject Win32_OperatingSystem).Caption } catch { $caption = "Windows" }
+    }
+    Write-Log "OS detected: $caption"
+
+    # Choose file based on OS
+    $candidate = "sysprep-unattend-modern.xml"
+    if ($caption -match "(?i)2012") {
+        $candidate = "sysprep-unattend-legacy.xml"
+    } else {
+        # For 2016/2019/2022 and Windows 10/11 keep modern
+        $candidate = "sysprep-unattend-modern.xml"
+    }
+
+    $src = Join-Path $unattendDrive $candidate
+    Write-Log "Attempting to copy candidate '$candidate' from $unattendDrive (source: $src) to $unattend"
+    if (Test-Path $src) {
+        try {
+            Copy-Item -Path $src -Destination $unattend -Force -ErrorAction Stop
+            if (Test-Path $unattend) {
+                try {
+                    $info = Get-Item -Path $unattend -ErrorAction Stop
+                    $size = $info.Length
+                } catch {
+                    $size = "unknown"
+                }
+                Write-Log "Copied '$src' (size: $size bytes) to '$unattend'"
+            } else {
+                Write-LogError "Copy appeared successful but destination $unattend not found"
+            }
+        } catch {
+            Write-LogError "Failed to copy '${src}' to '${unattend}': $($_)"
+        }
+    } else {
+        Write-Log "Selected $candidate not found on UNATTEND drive; will proceed expecting an existing $unattend"
+    }
+} else {
+    Write-Log "UNATTEND ISO not found; will proceed expecting an existing $unattend"
+}
+
+Write-Log "Command: $sysprepExe $args"
+Write-Log "System will shutdown after completion"
+
+try {
+    $p = Start-Process -FilePath $sysprepExe -ArgumentList $args -PassThru -NoNewWindow
+
+    # Wait up to 30 minutes (1800 seconds) for Sysprep to finish
+    $timeoutSeconds = 30 * 60
+    Write-Log "Waiting up to $timeoutSeconds seconds for Sysprep to complete..."
+
+    # Use .WaitForExit(milliseconds) to detect timeout reliably
+    $waitMs = $timeoutSeconds * 1000
+    $finished = $p.WaitForExit($waitMs)
+
+    if (-not $finished -or -not $p.HasExited) {
+        Write-LogError "Sysprep did not finish within $timeoutSeconds seconds. Dumping Sysprep Panther logs for debugging."
+
+        $panther = Join-Path $env:windir "System32\Sysprep\Panther"
+        $logs = @("setupact.log","setuperr.log")
+        foreach ($l in $logs) {
+            $path = Join-Path $panther $l
+            if (Test-Path $path) {
+                Write-Log "---- Begin $l ----"
+                try { Get-Content -Tail 500 $path -ErrorAction Stop | ForEach-Object { Write-Log $_ } } catch { Write-LogError "Failed to read ${path}: $_" }
+                Write-Log "---- End $l ----"
+            } else {
+                Write-Log "Log not found: $path"
+            }
+        }
+
+        # Attempt to terminate Sysprep process
+        try {
+            $p | Stop-Process -Force -ErrorAction SilentlyContinue
+            Write-Log "Sysprep process terminated"
+        } catch {
+            Write-LogError "Failed to terminate Sysprep process: $_"
+        }
+
+        Write-LogError "Sysprep timed out"
+        exit 1
+    }
+
+    # Refresh process object and check exit code if available
+    $p.Refresh()
+
+    # Try to read exit code safely (some environments may not expose it)
+    $exitCode = $null
+    try { $exitCode = $p.ExitCode } catch { $exitCode = $null }
+
+    if ($p.HasExited) {
+        # Consider Sysprep success if ExitCode == 0 OR (ExitCode unavailable but success tag exists)
+        $successTag = "C:\Windows\System32\Sysprep\Sysprep_succeeded.tag"
+        $successByTag = Test-Path $successTag
+        $failure = $false
+
+        if ($exitCode -ne $null) {
+            if ($exitCode -ne 0) {
+                Write-LogError "Sysprep failed with exit code $exitCode"
+                $failure = $true
+            } else {
+                Write-Log "Sysprep exited successfully (exit code 0). System should shutdown shortly."
+            }
+        } else {
+            if ($successByTag) {
+                Write-Log "Sysprep exited but exit code is unavailable; found success tag ($successTag) - treating as success."
+            } else {
+                Write-LogError "Sysprep exited but exit code is unavailable and no success tag found (process id $($p.Id))."
+                $failure = $true
+            }
+        }
+
+        if ($failure) {
+            Write-Log "Dumping Panther logs due to Sysprep failure..."
+            $panther = Join-Path $env:windir "System32\Sysprep\Panther"
+            $logs = @("setupact.log","setuperr.log")
+            foreach ($l in $logs) {
+                $path = Join-Path $panther $l
+                if (Test-Path $path) {
+                    Write-Log "---- Begin $l ----"
+                    try { Get-Content -Tail 500 $path -ErrorAction Stop | ForEach-Object { Write-Log $_ } } catch { Write-LogError "Failed to read ${path}: $_" }
+                    Write-Log "---- End $l ----"
+                } else {
+                    Write-Log "Log not found: $path"
+                }
+            }
+            exit 1
+        }
+    }
+}
+catch {
+    Write-LogError "Sysprep execution failed: $_"
+
+    # Attempt to dump Panther logs on exception too
+    $panther = Join-Path $env:windir "System32\Sysprep\Panther"
+    $logs = @("setupact.log","setuperr.log")
+    foreach ($l in $logs) {
+        $path = Join-Path $panther $l
+        if (Test-Path $path) {
+            Write-Log "---- Begin $l ----"
+            try { Get-Content -Tail 500 $path -ErrorAction Stop | ForEach-Object { Write-Log $_ } } catch { Write-LogError "Failed to read ${path}: $_" }
+            Write-Log "---- End $l ----"
+        }
+    }
+
+    exit 1
+}

@@ -45,6 +45,12 @@
                     <Description>Configure WinRM for Remote Access</Description>
                     <CommandLine>cmd.exe /c &quot;FOR %i IN (C D E F G H I J K L M N O P Q R S T U V W X Y Z) DO @IF EXIST %i:\Setup-WinRM.ps1 (powershell -ExecutionPolicy Bypass -File %i:\Setup-WinRM.ps1)&quot;</CommandLine>
                 </SynchronousCommand>
+                <SynchronousCommand wcm:action="add">
+                    <Order>10</Order>
+                    <Description>Clear password change flag</Description>
+                    <RequiresUserInput>false</RequiresUserInput>
+                    <CommandLine>powershell -ExecutionPolicy Bypass -Command "([ADSI]'WinNT://./Administrator,user').PasswordExpired = $false; ([ADSI]'WinNT://./Administrator,user').SetInfo()"</CommandLine>
+                </SynchronousCommand>
             </FirstLogonCommands>
         </component>
     </settings>
