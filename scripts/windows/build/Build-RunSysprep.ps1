@@ -40,9 +40,13 @@ Write-Log "Performing final cleanup before Sysprep..."
 # --- TEMP FILES ---
 Write-Log "Cleaning temporary directories..."
 try {
-    Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Log "Temporary files cleaned"
+    # Clean user temp but EXCLUDE Packer's env files to avoid race condition
+    Get-ChildItem "$env:TEMP\*" -Exclude "packer-ps-env-vars-*" -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+    # Clean Windows Temp but EXCLUDE Packer's env files
+    Get-ChildItem "C:\Windows\Temp\*" -Exclude "packer-ps-env-vars-*" -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+    Write-Log "Temporary files cleaned (excluded Packer env files)"
 } catch {
     Write-LogError "Temp cleanup failed: $_"
 }

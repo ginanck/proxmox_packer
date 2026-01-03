@@ -28,7 +28,7 @@ node_name          = "carbon"
 
 http_bind_address  = "10.50.0.2"
 http_port_min      = "8080"
-http_port_max      = "8080"
+http_port_max      = "8180"
 
 os_type            = ""
 os_version         = ""
