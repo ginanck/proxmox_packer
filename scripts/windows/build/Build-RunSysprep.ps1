@@ -156,7 +156,10 @@ if (-not $runonceArg) {
         $scriptPath = $MyInvocation.MyCommand.Definition
         if (Register-RunOnce-Sysprep -ScriptPath $scriptPath -Args '-runonce') {
             Write-Log "RunOnce registered. Rebooting..."
-            shutdown /r /t 0
+            # Give Packer time to disconnect gracefully before reboot
+            Start-Sleep -Seconds 5
+            # Exit cleanly before reboot to allow Packer to finish
+            shutdown /r /t 10
             exit 0
         } else {
             Write-LogError "Could not register RunOnce entry; aborting Sysprep to avoid failure."

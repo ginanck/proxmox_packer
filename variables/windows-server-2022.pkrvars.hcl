@@ -8,9 +8,9 @@ vm_disk_size      = "40G"
 
 vm_bios           = "ovmf"
 vm_os             = "win11"
-vm_cpu            = "2"
+vm_cpu            = "4"
 vm_sockets        = "1"
-vm_ram            = "4096"
+vm_ram            = "8192"
 vm_disk_type      = "sata"
 vm_nic_model      = "e1000"
 
