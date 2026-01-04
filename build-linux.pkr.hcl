@@ -1,7 +1,7 @@
 packer {
   required_plugins {
-    name = {
-      version = "1.2.3"
+    proxmox = {
+      version = ">= 1.2.3"
       source  = "github.com/hashicorp/proxmox"
     }
   }
@@ -17,6 +17,7 @@ variable "boot_command" {
 }
 
 variable "vm_cpu_type" {}
+variable "vm_bios" {}
 variable "vm_os" {}
 variable "vm_cpu" {}
 variable "vm_sockets" {}
@@ -49,7 +50,8 @@ variable "ssh_password" {}
 variable "node_name" {}
 
 variable "http_bind_address" {}
-variable "http_bind_port" {}
+variable "http_port_min" {}
+variable "http_port_max" {}
 
 variable "os_type" {}
 variable "os_version" {}
@@ -59,7 +61,7 @@ variable "provisioning_scripts" {
   description = "List of scripts to run during provisioning"
 }
 
-source "proxmox-iso" "proxmox-vm" {
+source "proxmox-iso" "proxmox-vm-linux" {
   proxmox_url = var.proxmox_url
   username    = var.proxmox_username
   token       = var.proxmox_api_token
@@ -93,10 +95,8 @@ source "proxmox-iso" "proxmox-vm" {
     firewall = var.vm_nic_firewall
   }
 
-  http_directory    = "files/${var.os_type}-${var.os_version}"
-  http_bind_address = var.http_bind_address
-  # http_port_min           = var.http_bind_port
-  # http_port_max           = var.http_bind_port
+  http_directory          = "files/${var.os_type}-${var.os_version}"
+  http_bind_address       = var.http_bind_address
   cloud_init              = true
   cloud_init_storage_pool = var.vm_storage_pool
 
@@ -119,7 +119,7 @@ source "proxmox-iso" "proxmox-vm" {
 build {
   name = "${var.template_name}"
   sources = [
-    "source.proxmox-iso.proxmox-vm"
+    "source.proxmox-iso.proxmox-vm-linux"
   ]
 
   provisioner "shell" {
@@ -136,5 +136,4 @@ build {
     valid_exit_codes  = [0, 2300218]
     execute_command   = "sudo -S bash '{{.Path}}'"
   }
-
 }

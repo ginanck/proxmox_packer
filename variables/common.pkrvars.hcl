@@ -1,15 +1,16 @@
-proxmox_url       = ""
-proxmox_username  = ""
-proxmox_api_token = ""
+proxmox_url        = ""
+proxmox_username   = ""
+proxmox_api_token  = ""
 
-locale = "en_US.UTF-8"
+locale             = "en_US.UTF-8"
 
 vm_cpu_type        = "host"
+vm_bios            = "seabios"
 vm_os              = "l26"
 vm_cpu             = "2"
 vm_sockets         = "1"
 vm_ram             = "4096"
-vm_scsi_controller = "virtio-scsi-single"
+vm_scsi_controller = "virtio-scsi-pci"
 vm_disk_type       = "virtio"
 vm_disk_size       = "10G"
 vm_disk_cache      = "writeback"
@@ -21,15 +22,25 @@ vm_nic_bridge      = "vmbr1"
 vm_nic_model       = "virtio"
 vm_nic_firewall    = "false"
 
-node_name = "carbon"
+vm_virtio_iso_file = "virtio-win-0.1.271.iso"
 
-http_bind_address = "10.50.0.2"
-http_bind_port    = "8080"
+node_name          = "carbon"
 
-os_type    = ""
-os_version = ""
+http_bind_address  = "10.50.0.2"
+http_port_min      = "8080"
+http_port_max      = "8180"
 
-boot_wait        = "10s"
-task_timeout     = "10m"
-qemu_agent       = true
-ssh_wait_timeout = "30m"
+os_type            = ""
+os_version         = ""
+
+boot_wait          = "10s"
+task_timeout       = "10m"
+qemu_agent         = true
+ssh_wait_timeout   = "30m"
+
+winrm_username        = "Administrator"
+winrm_password        = "Passw0rd1"
+winrm_timeout         = "1h"
+winrm_port            = "5985"
+winrm_use_ssl         = false
+winrm_insecure        = true
