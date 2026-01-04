@@ -69,10 +69,10 @@ $caption = $os.Caption
 
 switch -Wildcard ($caption) {
     '*2012 R2*' {
-        $cloudbaseVersion = '1.1.2'
-        $Installer = "C:\CloudbaseInitSetup_1_1_2_x64.msi"
-        $Url = "https://github.com/cloudbase/cloudbase-init/releases/download/1.1.2/CloudbaseInitSetup_1_1_2_x64.msi"
-        Write-Log "Detected Windows Server 2012 R2 - using Cloudbase-Init $cloudbaseVersion (max supported)"
+        $cloudbaseVersion = '1.1.1'
+        $Installer = "C:\CloudbaseInitSetup_1_1_1_x64.msi"
+        $Url = "https://github.com/cloudbase/cloudbase-init/releases/download/1.1.1/CloudbaseInitSetup_1_1_1_x64.msi"
+        Write-Log "Detected Windows Server 2012 R2 - using Cloudbase-Init $cloudbaseVersion"
         break
     }
     '*2016*' {
